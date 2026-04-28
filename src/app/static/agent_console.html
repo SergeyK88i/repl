@@ -475,6 +475,188 @@
       cursor: not-allowed;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(31, 35, 40, 0.38);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .modal {
+      width: min(1180px, 100%);
+      max-height: min(760px, calc(100vh - 40px));
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 28px 90px rgba(31, 35, 40, 0.28);
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-head h2 {
+      margin: 0 0 5px;
+      font-size: 22px;
+    }
+
+    .modal-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .close {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--panel);
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .diagram {
+      padding: 24px 28px 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 94px minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .diagram-phase {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .diagram-phase h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .diagram-agents {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .diagram-agent {
+      min-height: 112px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--coord);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .diagram-agent.warp { border-top-color: var(--warp); }
+    .diagram-agent.cr { border-top-color: var(--cr); }
+    .diagram-agent.ep { border-top-color: var(--ep); }
+    .diagram-agent.loader { border-top-color: #5b5eb3; }
+    .diagram-agent.publisher { border-top-color: #24734a; }
+
+    .diagram-agent strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .diagram-agent span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .exchange-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .exchange {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.72);
+      color: #3f464d;
+      font-size: 13px;
+    }
+
+    .ready-column {
+      display: grid;
+      place-items: center;
+      min-height: 100%;
+      border: 1px solid #b8e7ca;
+      border-radius: 14px;
+      background: #ecfdf3;
+      color: var(--ready);
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .ready-column .circle {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 8px;
+      border: 3px solid var(--ready);
+      border-radius: 50%;
+      background: var(--panel);
+    }
+
+    .diagram-timeline {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .diagram-step {
+      min-height: 82px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .diagram-step strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .diagram-step span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -530,6 +712,12 @@
       }
 
       .composer-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram-grid,
+      .diagram-timeline,
+      .diagram-agents {
         grid-template-columns: 1fr;
       }
     }
@@ -606,6 +794,7 @@
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-READY">SRC-READY</button>
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-123">SRC-123</button>
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-FAIL">SRC-FAIL</button>
+            <button class="chip" id="showDiagram" type="button">Схема агентов</button>
             <button class="chip" id="newDialog" type="button">Новый диалог</button>
           </div>
         </div>
@@ -622,6 +811,90 @@
         </form>
       </section>
     </main>
+  </div>
+
+  <div class="modal-backdrop" id="diagramModal" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="diagramTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="diagramTitle">Схема взаимодействия агентов</h2>
+          <p>До READY агенты готовят источник. После READY стартует контур создания и настройки реплики.</p>
+        </div>
+        <button class="close" id="closeDiagram" type="button" aria-label="Закрыть">×</button>
+      </div>
+
+      <div class="diagram">
+        <div class="diagram-grid">
+          <div class="diagram-phase">
+            <h3>До READY: подготовка источника</h3>
+            <div class="diagram-agents">
+              <div class="diagram-agent">
+                <strong>Координатор</strong>
+                <span>принимает предзаказ, ведёт статус, делегирует работу</span>
+              </div>
+              <div class="diagram-agent warp">
+                <strong>WARP</strong>
+                <span>проверяет готовность и возвращает failed criteria</span>
+              </div>
+              <div class="diagram-agent cr">
+                <strong>CR Manager</strong>
+                <span>создаёт CR-задачу и выполняет исправления</span>
+              </div>
+            </div>
+            <div class="exchange-list">
+              <div class="exchange">Пользователь создаёт предзаказ → Координатор фиксирует `correlation_id`.</div>
+              <div class="exchange">Координатор спрашивает WARP: готов ли источник?</div>
+              <div class="exchange">Если NOT_READY, Координатор передаёт failed criteria CR Manager.</div>
+              <div class="exchange">CR Manager исправляет и сообщает Координатору результат self-check.</div>
+              <div class="exchange">Координатор делает официальный final-check через WARP.</div>
+            </div>
+          </div>
+
+          <div class="ready-column">
+            <div>
+              <div class="circle">✓</div>
+              READY
+            </div>
+          </div>
+
+          <div class="diagram-phase">
+            <h3>После READY: создание реплики</h3>
+            <div class="diagram-agents">
+              <div class="diagram-agent ep">
+                <strong>ЕР-Конфигуратор</strong>
+                <span>создаёт заказ в другом Jira-пространстве и генерирует конфиг</span>
+              </div>
+              <div class="diagram-agent loader">
+                <strong>Init Loader</strong>
+                <span>запускает первичную загрузку данных</span>
+              </div>
+              <div class="diagram-agent publisher">
+                <strong>Публикатор</strong>
+                <span>проверяет и публикует результат</span>
+              </div>
+            </div>
+            <div class="exchange-list">
+              <div class="exchange">Координатор передаёт READY-предзаказ ЕР-Конфигуратору.</div>
+              <div class="exchange">ЕР-Конфигуратор подбирает параметры реплики.</div>
+              <div class="exchange">ЕР-Конфигуратор генерирует конфиг для ЕР.</div>
+              <div class="exchange">Init Loader запускает загрузку.</div>
+              <div class="exchange">Публикатор завершает процесс и делает результат доступным.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="diagram-timeline">
+          <div class="diagram-step"><strong>CREATED</strong><span>предзаказ принят</span></div>
+          <div class="diagram-step"><strong>VALIDATING</strong><span>проверка WARP</span></div>
+          <div class="diagram-step"><strong>WAITING_CR</strong><span>работает CR Manager</span></div>
+          <div class="diagram-step"><strong>READY</strong><span>источник готов</span></div>
+          <div class="diagram-step"><strong>EP_TASK</strong><span>старт ЕР-задачи</span></div>
+          <div class="diagram-step"><strong>CONFIGURING</strong><span>параметры и конфиг</span></div>
+          <div class="diagram-step"><strong>LOADING</strong><span>загрузка данных</span></div>
+          <div class="diagram-step"><strong>PUBLISHED</strong><span>реплика опубликована</span></div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -948,6 +1221,28 @@
     document.getElementById("newDialog").addEventListener("click", () => {
       if (state.busy) return;
       resetDialog(true);
+    });
+
+    const modal = document.getElementById("diagramModal");
+    document.getElementById("showDiagram").addEventListener("click", () => {
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    });
+    document.getElementById("closeDiagram").addEventListener("click", () => {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    });
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+      }
     });
 
     renderRail("IDLE", false);
