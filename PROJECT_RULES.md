@@ -511,82 +511,216 @@ ReplicaInitPort.start(order_id, source_id, correlation_id)
 
 Validation-фаза не должна hardcode-ить внутренние детали replica-фазы.
 
-## Предлагаемая структура Python-пакетов
+## Структура Python-пакетов
+
+Целевая структура проекта должна быть agent-oriented.
+
+Каждый агент должен жить в собственной папке внутри `src/agents/{agent_name}/` и иметь свою внутреннюю архитектуру: `api`, `domain`, `application`, `ports`, `adapters`, а для LLM-агентов также `tools`.
+
+Такой подход нужен, чтобы разные команды могли независимо разрабатывать разных агентов:
+
+- команда Coordinator работает преимущественно в `src/agents/coordinator/`;
+- команда WARP работает преимущественно в `src/agents/warp/`;
+- команда CR Manager работает преимущественно в `src/agents/cr_manager/`;
+- общие контракты и базовые типы согласуются через `src/shared/`.
+
+Агенты не должны импортировать внутренний application/domain-код друг друга.
+
+Взаимодействие между агентами должно идти через:
+
+- shared contracts;
+- порты;
+- adapters;
+- HTTP API;
+- task queue или event bus в будущей production-версии.
+
+Для POC агент может вызывать другой агент через in-process adapter. Для production тот же порт должен уметь работать через HTTP, gRPC, очередь или другой межсервисный транспорт.
+
+Запрещённый пример:
+
+```python
+from agents.warp.application.service import WarpService
+```
+
+Разрешённая модель:
+
+```python
+from shared.contracts.readiness import ReadinessRequest, ReadinessResponse
+from agents.coordinator.ports.warp import WarpPort
+```
+
+Дальше конкретная реализация `WarpPort` выбирается конфигурацией:
+
+```text
+WarpPort
+  -> InProcessWarpAdapter
+  -> HttpWarpAdapter
+  -> MockWarpAdapter
+```
+
+Цель: каждый агент должен быть достаточно самодостаточным, чтобы позже его можно было вынести из монолита в отдельное приложение без переписывания бизнес-логики.
+
+Эволюционный путь:
+
+```text
+1. Один репозиторий, один процесс, in-process adapters.
+2. Один репозиторий, один процесс, реальные внешние adapters.
+3. WARP выносится в отдельный сервис.
+4. CR Manager выносится в отдельный сервис.
+5. Добавляется очередь или event bus между агентами.
+6. Агенты масштабируются независимо.
+```
+
+Рекомендуемая структура:
 
 ```text
 src/
   app/
     main.py
-    api/
-      order_routes.py
-      trace_routes.py
-      cr_manager_routes.py
-      warp_routes.py
     config/
       settings.py
       container.py
 
-  domain/
-    orders/
-      models.py
-      statuses.py
-      state_machine.py
-    readiness/
-      models.py
-      criteria.py
-    tasks/
-      models.py
-      statuses.py
-    trace/
-      models.py
-
-  application/
-    coordinator/
-      service.py
-      workflow.py
-    cr_manager/
-      service.py
-      agent.py
-    warp/
-      service.py
-    replica/
-      service.py
-
-  ports/
-    order_repository.py
-    task_repository.py
-    warp.py
-    jira.py
-    trace.py
-    connector.py
-    replica_init.py
-
-  adapters/
-    mock/
-      warp.py
-      jira.py
+  shared/
+    contracts/
+      orders.py
+      readiness.py
+      remediation.py
+      tasks.py
       trace.py
-      connectors.py
-      replica_init.py
-      repositories.py
-    http/
-      warp.py
+      replica.py
+    domain/
+      ids.py
+      errors.py
+      timestamps.py
+    ports/
       trace.py
-    jira/
-      jira_cloud.py
-    persistence/
-      postgres_orders.py
-      postgres_tasks.py
+      event_bus.py
+    telemetry/
+      correlation.py
+      trace_events.py
+    security/
+      permissions.py
+      service_accounts.py
 
   agents/
-    coordinator.py
-    cr_manager.py
-    warp.py
+    coordinator/
+      api/
+        routes.py
+      domain/
+        order.py
+        statuses.py
+        state_machine.py
+      application/
+        service.py
+        workflow.py
+      ports/
+        order_repository.py
+        warp.py
+        cr_manager.py
+        replica_init.py
+        trace.py
+      adapters/
+        in_process/
+          warp.py
+          cr_manager.py
+          replica_init.py
+        http/
+          warp.py
+          cr_manager.py
+          replica_init.py
+        persistence/
+          in_memory_orders.py
+          postgres_orders.py
+
+    warp/
+      api/
+        routes.py
+      domain/
+        criteria.py
+        readiness.py
+        remediation.py
+      application/
+        service.py
+        validator.py
+      ports/
+        source_inspector.py
+        remediation_catalog.py
+        trace.py
+      adapters/
+        mock/
+          source_inspector.py
+          remediation_catalog.py
+        http/
+          source_inspector.py
+        persistence/
+          remediation_catalog.py
+
+    cr_manager/
+      api/
+        routes.py
+      domain/
+        task.py
+        statuses.py
+        remediation_execution.py
+      application/
+        service.py
+        agent.py
+      ports/
+        task_repository.py
+        jira.py
+        warp.py
+        connector.py
+        coordinator_callback.py
+        trace.py
+      adapters/
+        mock/
+          jira.py
+          warp.py
+          connectors.py
+          coordinator_callback.py
+          task_repository.py
+        http/
+          warp.py
+          coordinator_callback.py
+        jira/
+          jira_cloud.py
+        connectors/
+          confluence.py
+          config_updater.py
+          db_migration.py
+      tools/
+        create_jira_issue.py
+        get_warp_remediation.py
+        run_connector.py
+        run_warp_self_check.py
+
+    replica/
+      api/
+        routes.py
+      domain/
+        replica_job.py
+        statuses.py
+      application/
+        service.py
+      ports/
+        configurator.py
+        loader.py
+        publisher.py
+        trace.py
+      adapters/
+        mock/
+          configurator.py
+          loader.py
+          publisher.py
 
   tests/
-    unit/
-    integration/
+    coordinator/
+    warp/
+    cr_manager/
+    replica/
     contract/
+    integration/
 ```
 
 ## Правила тестирования
