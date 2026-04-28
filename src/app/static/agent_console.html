@@ -633,8 +633,19 @@
 
     .diagram-timeline {
       display: grid;
-      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr) 94px minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .diagram-timeline-side {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
+    }
+
+    .diagram-timeline-side.after-ready {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .diagram-step {
@@ -654,6 +665,32 @@
     .diagram-step span {
       color: var(--muted);
       font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .diagram-ready-step {
+      min-height: 82px;
+      display: grid;
+      place-items: center;
+      padding: 10px 8px;
+      border: 1px solid #b8e7ca;
+      border-radius: 12px;
+      background: #ecfdf3;
+      color: var(--ready);
+      text-align: center;
+    }
+
+    .diagram-ready-step strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .diagram-ready-step span {
+      color: var(--ready);
+      font-size: 12px;
+      font-weight: 750;
       line-height: 1.25;
     }
 
@@ -717,7 +754,9 @@
 
       .diagram-grid,
       .diagram-timeline,
-      .diagram-agents {
+      .diagram-agents,
+      .diagram-timeline-side,
+      .diagram-timeline-side.after-ready {
         grid-template-columns: 1fr;
       }
     }
@@ -884,14 +923,20 @@
         </div>
 
         <div class="diagram-timeline">
-          <div class="diagram-step"><strong>CREATED</strong><span>предзаказ принят</span></div>
-          <div class="diagram-step"><strong>VALIDATING</strong><span>проверка WARP</span></div>
-          <div class="diagram-step"><strong>WAITING_CR</strong><span>работает CR Manager</span></div>
-          <div class="diagram-step"><strong>READY</strong><span>источник готов</span></div>
-          <div class="diagram-step"><strong>EP_TASK</strong><span>старт ЕР-задачи</span></div>
-          <div class="diagram-step"><strong>CONFIGURING</strong><span>параметры и конфиг</span></div>
-          <div class="diagram-step"><strong>LOADING</strong><span>загрузка данных</span></div>
-          <div class="diagram-step"><strong>PUBLISHED</strong><span>реплика опубликована</span></div>
+          <div class="diagram-timeline-side">
+            <div class="diagram-step"><strong>CREATED</strong><span>предзаказ принят</span></div>
+            <div class="diagram-step"><strong>VALIDATING</strong><span>проверка WARP</span></div>
+            <div class="diagram-step"><strong>WAITING_CR</strong><span>работает CR Manager</span></div>
+          </div>
+          <div class="diagram-ready-step">
+            <div><strong></strong><span>источник готов</span></div>
+          </div>
+          <div class="diagram-timeline-side after-ready">
+            <div class="diagram-step"><strong>EP_TASK</strong><span>старт ЕР-задачи</span></div>
+            <div class="diagram-step"><strong>CONFIGURING</strong><span>параметры и конфиг</span></div>
+            <div class="diagram-step"><strong>LOADING</strong><span>загрузка данных</span></div>
+            <div class="diagram-step"><strong>PUBLISHED</strong><span>реплика опубликована</span></div>
+          </div>
         </div>
       </div>
     </section>
