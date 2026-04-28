@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Агентная архитектура подготовки источника и запуска реплики</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17212b;
+      --muted: #5d6b78;
+      --line: #d7e0e8;
+      --paper: #f6f8fb;
+      --white: #ffffff;
+      --source: #2457a6;
+      --ready: #13804d;
+      --ep: #8a6f00;
+      --cr: #a45124;
+      --warp: #087568;
+      --soft-blue: #edf4ff;
+      --soft-green: #eef9f3;
+      --soft-gold: #fff7da;
+      --soft-orange: #fff1e8;
+      --shadow: 0 16px 42px rgba(23, 33, 43, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.45;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 54px 0 30px;
+    }
+
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 30px;
+      align-items: stretch;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin: 0 0 24px;
+      font-size: 20px;
+      color: #334456;
+    }
+
+    .hero-points {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .hero-point,
+    .summary-card,
+    .agent-card,
+    .phase-card,
+    .scenario-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--white);
+      box-shadow: 0 8px 22px rgba(23, 33, 43, 0.06);
+    }
+
+    .hero-point {
+      padding: 14px;
+      min-height: 118px;
+    }
+
+    .hero-point strong {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--source);
+    }
+
+    .hero-point p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .summary-card {
+      padding: 22px;
+      background: linear-gradient(180deg, #ffffff, #f9fbfd);
+    }
+
+    .summary-card h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 14px;
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .summary-row:first-of-type {
+      border-top: 0;
+    }
+
+    .summary-row strong {
+      color: var(--source);
+    }
+
+    .summary-row span {
+      color: var(--muted);
+    }
+
+    .section {
+      padding: 34px 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    .section-header p {
+      max-width: 620px;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .architecture-map {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--white);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .phase-columns {
+      display: grid;
+      grid-template-columns: 1fr 86px 1fr;
+      min-height: 420px;
+    }
+
+    .phase-column {
+      padding: 22px;
+    }
+
+    .phase-column.source {
+      background: var(--soft-blue);
+    }
+
+    .phase-column.replica {
+      background: var(--soft-gold);
+    }
+
+    .phase-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .phase-title h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .phase-title span {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .agent-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .replica .agent-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .agent-card {
+      min-height: 156px;
+      padding: 14px;
+      border-top: 5px solid currentColor;
+    }
+
+    .agent-card h4 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .agent-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .agent-card.coordinator { color: var(--source); }
+    .agent-card.warp { color: var(--warp); }
+    .agent-card.cr { color: var(--cr); }
+    .agent-card.ep { color: var(--ep); }
+    .agent-card.loader { color: #5d5aa7; }
+    .agent-card.publisher { color: #2e6b43; }
+
+    .conversation {
+      display: grid;
+      gap: 10px;
+    }
+
+    .talk {
+      padding: 12px;
+      border: 1px solid rgba(23, 33, 43, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    .talk strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+
+    .talk span {
+      color: var(--muted);
+    }
+
+    .ready-gate {
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      background: var(--soft-green);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      color: var(--ready);
+      text-align: center;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .ready-gate div {
+      display: grid;
+      place-items: center;
+      width: 64px;
+      height: 64px;
+      border: 3px solid var(--ready);
+      border-radius: 50%;
+      background: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .timeline-strip {
+      display: grid;
+      grid-template-columns: 1fr 86px 1fr;
+      border-top: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .timeline-part {
+      padding: 18px 22px 22px;
+    }
+
+    .timeline-part h4 {
+      margin: 0 0 14px;
+      font-size: 17px;
+    }
+
+    .status-line {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .replica-statuses {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .status {
+      min-height: 92px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--white);
+      position: relative;
+    }
+
+    .status::before {
+      content: "";
+      display: block;
+      width: 15px;
+      height: 15px;
+      margin-bottom: 8px;
+      border-radius: 50%;
+      background: var(--source);
+    }
+
+    .status.ready::before,
+    .status.after-ready::before {
+      background: var(--ready);
+    }
+
+    .status.after-ready {
+      border-color: #e2cf7a;
+      background: #fffaf0;
+    }
+
+    .status strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .scenario-card {
+      padding: 18px;
+      min-height: 420px;
+    }
+
+    .scenario-card h3 {
+      margin: 0 0 12px;
+      font-size: 21px;
+    }
+
+    .scenario-card ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .scenario-card li {
+      margin: 9px 0;
+    }
+
+    .scenario-card pre {
+      margin: 16px 0 0;
+      padding: 13px;
+      border-radius: var(--radius);
+      background: #17212b;
+      color: #e9f0f7;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.48;
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .phase-card {
+      padding: 18px;
+      min-height: 250px;
+    }
+
+    .phase-card h3 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+
+    .phase-card ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .phase-card li {
+      margin: 10px 0;
+    }
+
+    .callout {
+      margin: 30px 0 48px;
+      padding: 20px;
+      border-left: 5px solid var(--ready);
+      border-radius: var(--radius);
+      background: var(--white);
+      box-shadow: 0 8px 22px rgba(23, 33, 43, 0.06);
+      color: #334456;
+      font-size: 18px;
+    }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #eef3f7;
+      color: #26384a;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 1000px) {
+      .hero-layout,
+      .phase-columns,
+      .timeline-strip,
+      .decision-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ready-gate {
+        min-height: 110px;
+        border-left: 0;
+        border-right: 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .agent-row,
+      .scenario-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1180px);
+      }
+
+      .hero {
+        padding-top: 32px;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .lead {
+        font-size: 18px;
+      }
+
+      .hero-points,
+      .status-line,
+      .replica-statuses {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        display: block;
+      }
+
+      .section-header p {
+        margin-top: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-layout">
+        <div>
+          <h1>От предзаказа до готовой реплики через управляемых агентов</h1>
+          <p class="lead">
+            Мы разделяем процесс на две понятные фазы: до READY система готовит источник,
+            после READY отдельные агенты создают и настраивают реплику. Каждый агент отвечает
+            за свою часть, а Координатор держит общий маршрут и статус.
+          </p>
+          <div class="hero-points">
+            <div class="hero-point">
+              <strong>Контрольная точка READY</strong>
+              <p>Руководство видит понятный рубеж: источник подтверждён и можно начинать реплику.</p>
+            </div>
+            <div class="hero-point">
+              <strong>Постепенная автоматизация</strong>
+              <p>Сначала заглушки, затем реальные WARP, Jira, ЕР и коннекторы без переделки ядра.</p>
+            </div>
+            <div class="hero-point">
+              <strong>Прозрачность</strong>
+              <p>У каждого действия есть статус, ответственный агент и trace по `correlation_id`.</p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="summary-card">
+          <h2>Что продаём как идею</h2>
+          <div class="summary-row">
+            <strong>Проблема</strong>
+            <span>Перед созданием реплики нужно понять, готов ли источник, и быстро исправить недочёты.</span>
+          </div>
+          <div class="summary-row">
+            <strong>Решение</strong>
+            <span>Координатор ведёт предзаказ, WARP проверяет готовность, CR Manager исправляет, ЕР-Конфигуратор стартует после READY.</span>
+          </div>
+          <div class="summary-row">
+            <strong>Эффект</strong>
+            <span>Меньше ручной координации, больше трассируемости, понятная точка перехода к созданию реплики.</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Главная схема</h2>
+        <p>
+          Сверху показаны агенты, которые работают в каждой фазе. Снизу — timeline статусов:
+          сначала предзаказ до READY, затем заказ/работа по реплике после READY.
+        </p>
+      </div>
+
+      <div class="architecture-map">
+        <div class="phase-columns">
+          <div class="phase-column source">
+            <div class="phase-title">
+              <h3>Фаза 1. Подготовка источника</h3>
+              <span>предзаказ</span>
+            </div>
+
+            <div class="agent-row">
+              <article class="agent-card coordinator">
+                <h4>Координатор</h4>
+                <p>Принимает предзаказ, держит статус, спрашивает WARP, делегирует исправления.</p>
+              </article>
+              <article class="agent-card warp">
+                <h4>WARP</h4>
+                <p>Единственный источник истины: готов источник или нет, какие критерии не выполнены.</p>
+              </article>
+              <article class="agent-card cr">
+                <h4>CR Manager</h4>
+                <p>Создаёт CR-задачу, получает инструкции, выполняет исправления через коннекторы.</p>
+              </article>
+            </div>
+
+            <div class="conversation">
+              <div class="talk">
+                <strong>Предзаказ принят</strong>
+                <span>Координатор создаёт `order_id`, `correlation_id` и запускает проверку источника.</span>
+              </div>
+              <div class="talk">
+                <strong>Если источник не готов</strong>
+                <span>WARP возвращает failed criteria, Координатор передаёт их CR Manager.</span>
+              </div>
+              <div class="talk">
+                <strong>Повторная проверка</strong>
+                <span>После исправлений Координатор делает официальный final-check через WARP.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ready-gate">
+            <div>✓</div>
+            READY
+          </div>
+
+          <div class="phase-column replica">
+            <div class="phase-title">
+              <h3>Фаза 2. Создание реплики</h3>
+              <span>после READY</span>
+            </div>
+
+            <div class="agent-row">
+              <article class="agent-card ep">
+                <h4>ЕР-Конфигуратор</h4>
+                <p>Создаёт заказ в другом Jira-пространстве, подбирает параметры, генерирует конфиг ЕР.</p>
+              </article>
+              <article class="agent-card loader">
+                <h4>Init Loader</h4>
+                <p>Запускает первичную загрузку данных по подготовленному конфигу.</p>
+              </article>
+              <article class="agent-card publisher">
+                <h4>Публикатор</h4>
+                <p>Проверяет результат и публикует реплику для дальнейшего использования.</p>
+              </article>
+            </div>
+
+            <div class="conversation">
+              <div class="talk">
+                <strong>Координатор передаёт задачу</strong>
+                <span>После READY стартует работа ЕР-Конфигуратора, а не просто “конец процесса”.</span>
+              </div>
+              <div class="talk">
+                <strong>Настройка реплики</strong>
+                <span>ЕР-Конфигуратор подбирает параметры и готовит конфигурацию для ЕР.</span>
+              </div>
+              <div class="talk">
+                <strong>Загрузка и публикация</strong>
+                <span>Следующие агенты выполняют загрузку, проверку и публикацию результата.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-strip">
+          <div class="timeline-part">
+            <h4>Timeline предзаказа до READY</h4>
+            <div class="status-line">
+              <div class="status">
+                <strong>CREATED</strong>
+                <span>предзаказ принят</span>
+              </div>
+              <div class="status">
+                <strong>VALIDATING</strong>
+                <span>источник проверяется</span>
+              </div>
+              <div class="status">
+                <strong>WAITING_CR</strong>
+                <span>идут исправления</span>
+              </div>
+              <div class="status ready">
+                <strong>READY</strong>
+                <span>источник подтверждён</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ready-gate">
+            <div>→</div>
+            переход
+          </div>
+
+          <div class="timeline-part">
+            <h4>Timeline заказа после READY</h4>
+            <div class="status-line replica-statuses">
+              <div class="status after-ready">
+                <strong>EP_TASK_CREATED</strong>
+                <span>заказ в Jira ЕР</span>
+              </div>
+              <div class="status after-ready">
+                <strong>CONFIGURING</strong>
+                <span>подбор параметров</span>
+              </div>
+              <div class="status after-ready">
+                <strong>LOADING</strong>
+                <span>первичная загрузка</span>
+              </div>
+              <div class="status after-ready">
+                <strong>PUBLISHED</strong>
+                <span>реплика опубликована</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Что происходит на границе READY</h2>
+        <p>
+          Здесь лучше говорить не про endpoints, а про управленческую логику процесса.
+        </p>
+      </div>
+
+      <div class="decision-grid">
+        <article class="phase-card">
+          <h3>До READY</h3>
+          <ul>
+            <li>Пользователь создаёт предзаказ на подготовку источника.</li>
+            <li>Координатор спрашивает WARP, можно ли строить реплику.</li>
+            <li>Если есть проблемы, CR Manager получает конкретную работу.</li>
+            <li>Любое “готово” перепроверяется через WARP.</li>
+            <li>Предзаказ не идёт дальше, пока источник не подтверждён.</li>
+          </ul>
+        </article>
+
+        <article class="phase-card">
+          <h3>После READY</h3>
+          <ul>
+            <li>Источник считается пригодным для создания реплики.</li>
+            <li>Координатор передаёт задачу ЕР-Конфигуратору.</li>
+            <li>ЕР-Конфигуратор создаёт заказ в другом Jira-пространстве.</li>
+            <li>Подбираются параметры и генерируется конфиг для ЕР.</li>
+            <li>Дальше подключаются агенты загрузки и публикации.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Три сценария для демонстрации</h2>
+        <p>
+          Без переключателей: каждый сценарий показан отдельно, чтобы было понятно,
+          что именно делает система и какой ответ возвращает.
+        </p>
+      </div>
+
+      <div class="scenario-grid">
+        <article class="scenario-card">
+          <h3>1. Источник сразу готов</h3>
+          <ol>
+            <li>Пользователь создаёт предзаказ для `SRC-READY`.</li>
+            <li>Координатор запускает проверку источника.</li>
+            <li>WARP сразу возвращает READY.</li>
+            <li>CR Manager не нужен.</li>
+            <li>Координатор передаёт задачу следующей фазе.</li>
+          </ol>
+          <pre>{
+  "source_id": "SRC-READY",
+  "status": "READY",
+  "attempts": 0,
+  "cr_task_ids": [],
+  "replica_started": true
+}</pre>
+        </article>
+
+        <article class="scenario-card">
+          <h3>2. Источник требует исправлений</h3>
+          <ol>
+            <li>Пользователь создаёт предзаказ для `SRC-123`.</li>
+            <li>WARP возвращает NOT_READY.</li>
+            <li>Координатор создаёт CR-задачу.</li>
+            <li>Предзаказ ждёт CR Manager.</li>
+            <li>Реплика ещё не стартует.</li>
+          </ol>
+          <pre>{
+  "source_id": "SRC-123",
+  "status": "WAITING_CR",
+  "attempts": 1,
+  "cr_task_ids": ["TASK-931852627F50"],
+  "replica_started": false
+}</pre>
+        </article>
+
+        <article class="scenario-card">
+          <h3>3. CR Manager завершил работу</h3>
+          <ol>
+            <li>CR Manager сообщает, что задача выполнена.</li>
+            <li>Координатор проверяет, что task принадлежит предзаказу.</li>
+            <li>Координатор делает final-check через WARP.</li>
+            <li>WARP возвращает READY.</li>
+            <li>Стартует задача для ЕР-Конфигуратора.</li>
+          </ol>
+          <pre>{
+  "source_id": "SRC-123",
+  "status": "READY",
+  "attempts": 1,
+  "cr_task_ids": ["TASK-931852627F50"],
+  "replica_started": true
+}</pre>
+        </article>
+      </div>
+    </section>
+
+    <div class="callout">
+      Ключевая идея для согласования: мы не пытаемся сразу автоматизировать всю реплику.
+      Сначала строим управляемый контур до READY, где понятны статусы, ответственность агентов
+      и критерий перехода. После этого безопасно подключаем ЕР-Конфигуратора и следующих агентов.
+    </div>
+  </main>
+</body>
+</html>

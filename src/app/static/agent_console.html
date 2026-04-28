@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Room</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f3f1;
+      --panel: #ffffff;
+      --soft: #f8f8f7;
+      --ink: #1f2328;
+      --muted: #6f757c;
+      --line: #dededb;
+      --line-strong: #c9c9c4;
+      --black: #111111;
+      --coord: #315f9f;
+      --warp: #167466;
+      --cr: #9a582b;
+      --ep: #806b13;
+      --user: #111111;
+      --ready: #16834f;
+      --wait: #9a6500;
+      --fail: #b42318;
+      --shadow: 0 18px 45px rgba(31, 35, 40, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 58px 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(243, 243, 241, 0.88);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 760;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--black);
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .topbar small {
+      color: var(--muted);
+    }
+
+    .layout {
+      width: min(1280px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
+      min-height: calc(100vh - 58px);
+    }
+
+    .sidebar,
+    .room {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      align-content: start;
+    }
+
+    .side-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side-section:last-child {
+      border-bottom: 0;
+    }
+
+    h1, h2 {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 24px;
+      line-height: 1.12;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .agent-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .agent {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--soft);
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .avatar.user { background: var(--user); }
+    .avatar.coord { background: var(--coord); }
+    .avatar.warp { background: var(--warp); }
+    .avatar.cr { background: var(--cr); }
+    .avatar.ep { background: var(--ep); }
+
+    .agent strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 14px;
+    }
+
+    .agent span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .status-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .kv {
+      display: grid;
+      gap: 3px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--soft);
+    }
+
+    .kv span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .kv strong {
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      width: fit-content;
+      min-height: 26px;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #315f9f;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .badge.ready { background: #ecfdf3; color: var(--ready); }
+    .badge.wait { background: #fff7ed; color: var(--wait); }
+    .badge.fail { background: #fef3f2; color: var(--fail); }
+
+    .rail {
+      display: grid;
+      gap: 7px;
+      margin-top: 4px;
+    }
+
+    .rail-step {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 9px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      margin-top: 3px;
+      border-radius: 50%;
+      background: #c8cacd;
+    }
+
+    .rail-step.done { color: var(--ink); }
+    .rail-step.done .dot { background: var(--ready); }
+    .rail-step.active { color: var(--ink); font-weight: 750; }
+    .rail-step.active .dot { background: #315f9f; }
+
+    .room {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .room-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .room-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      max-width: 720px;
+      font-size: 14px;
+    }
+
+    .mini-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .chip,
+    .send {
+      min-height: 34px;
+      padding: 7px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 650;
+      font-size: 13px;
+    }
+
+    .chip:hover,
+    .send:hover {
+      background: #f7f7f6;
+      border-color: #aaa;
+    }
+
+    .chat {
+      padding: 20px;
+      overflow: auto;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0)),
+        var(--panel);
+    }
+
+    .messages {
+      display: grid;
+      gap: 14px;
+      max-width: 850px;
+      margin: 0 auto;
+    }
+
+    .message {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 11px;
+      align-items: start;
+    }
+
+    .message.user-message {
+      grid-template-columns: minmax(0, 1fr) 38px;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--soft);
+      line-height: 1.45;
+      white-space: pre-wrap;
+      box-shadow: 0 8px 20px rgba(31, 35, 40, 0.04);
+    }
+
+    .user-message .bubble {
+      justify-self: end;
+      background: var(--black);
+      color: #fff;
+      border-color: var(--black);
+    }
+
+    .speaker {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .typing {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      min-width: 46px;
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #9ca3af;
+      animation: blink 1s infinite ease-in-out;
+    }
+
+    .typing span:nth-child(2) { animation-delay: 0.14s; }
+    .typing span:nth-child(3) { animation-delay: 0.28s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-2px); }
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: 14px;
+      background: rgba(255,255,255,0.92);
+    }
+
+    .composer-inner {
+      max-width: 850px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+      padding: 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 10px 28px rgba(31, 35, 40, 0.08);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      max-height: 140px;
+      resize: none;
+      border: 0;
+      outline: 0;
+      padding: 10px;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.4;
+    }
+
+    .send {
+      min-width: 92px;
+      min-height: 42px;
+      border-radius: 13px;
+      background: var(--black);
+      color: #fff;
+      border-color: var(--black);
+    }
+
+    .send:disabled,
+    .chip:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        padding: 0 12px;
+      }
+
+      .topbar small {
+        display: none;
+      }
+
+      .layout {
+        width: min(100% - 18px, 1280px);
+      }
+
+      .room-head {
+        display: grid;
+      }
+
+      .mini-actions {
+        justify-content: start;
+      }
+
+      .message,
+      .message.user-message {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+
+      .message.user-message .avatar {
+        order: 0;
+      }
+
+      .message.user-message .bubble {
+        justify-self: start;
+      }
+
+      .composer-inner {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">AI</div>
+        <span>Agent Room</span>
+      </div>
+      <small>Пользователь · Координатор · WARP · CR Manager · ЕР-Конфигуратор</small>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <section class="side-section">
+          <h1>Комната агентов</h1>
+          <p class="hint">
+            Напиши запрос в чат. Агенты начнут общаться между собой, а слева будет меняться статус предзаказа.
+          </p>
+        </section>
+
+        <section class="side-section">
+          <h2>Участники</h2>
+          <div class="agent-list">
+            <div class="agent">
+              <div class="avatar user">Я</div>
+              <div><strong>Пользователь</strong><span>создаёт предзаказ и задаёт вопросы</span></div>
+            </div>
+            <div class="agent">
+              <div class="avatar coord">К</div>
+              <div><strong>Координатор</strong><span>ведёт статус и маршрутизирует процесс</span></div>
+            </div>
+            <div class="agent">
+              <div class="avatar warp">W</div>
+              <div><strong>WARP</strong><span>проверяет готовность источника</span></div>
+            </div>
+            <div class="agent">
+              <div class="avatar cr">CR</div>
+              <div><strong>CR Manager</strong><span>исправляет failed criteria</span></div>
+            </div>
+            <div class="agent">
+              <div class="avatar ep">EP</div>
+              <div><strong>ЕР-Конфигуратор</strong><span>стартует после READY</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-section">
+          <h2>Текущий предзаказ</h2>
+          <div class="status-card">
+            <div class="kv"><span>ID</span><strong id="orderId">ещё не создан</strong></div>
+            <div class="kv"><span>Источник</span><strong id="sourceId">-</strong></div>
+            <div class="kv"><span>Статус</span><strong><em class="badge" id="statusBadge">idle</em></strong></div>
+            <div class="kv"><span>CR-задачи</span><strong id="taskIds">-</strong></div>
+            <div class="kv"><span>correlation_id</span><strong id="correlationId">-</strong></div>
+          </div>
+        </section>
+
+        <section class="side-section">
+          <h2>Путь процесса</h2>
+          <div class="rail" id="rail"></div>
+        </section>
+      </aside>
+
+      <section class="room">
+        <div class="room-head">
+          <div>
+            <h2>Групповой чат процесса</h2>
+            <p>
+              Это демонстрационный интерфейс: сценарий запускается из чата, а ответы агентов появляются с паузами,
+              чтобы было видно, кто с кем общается.
+            </p>
+          </div>
+          <div class="mini-actions">
+            <button class="chip" data-prompt="Хочу загрузить реплику для SRC-READY">SRC-READY</button>
+            <button class="chip" data-prompt="Хочу загрузить реплику для SRC-123">SRC-123</button>
+            <button class="chip" data-prompt="Хочу загрузить реплику для SRC-FAIL">SRC-FAIL</button>
+          </div>
+        </div>
+
+        <div class="chat" id="chat">
+          <div class="messages" id="messages"></div>
+        </div>
+
+        <form class="composer" id="form">
+          <div class="composer-inner">
+            <textarea id="input" rows="1" placeholder="Например: Хочу загрузить реплику для SRC-123"></textarea>
+            <button class="send" id="send" type="submit">Отправить</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      order: null,
+      busy: false,
+      trace: []
+    };
+
+    const agents = {
+      user: { label: "Пользователь", avatar: "Я", cls: "user" },
+      coordinator: { label: "Координатор", avatar: "К", cls: "coord" },
+      warp: { label: "WARP", avatar: "W", cls: "warp" },
+      cr: { label: "CR Manager", avatar: "CR", cls: "cr" },
+      ep: { label: "ЕР-Конфигуратор", avatar: "EP", cls: "ep" }
+    };
+
+    const railSteps = [
+      ["CREATED", "предзаказ принят"],
+      ["VALIDATING", "WARP проверяет источник"],
+      ["WAITING_CR", "CR Manager исправляет"],
+      ["FINAL_CHECK", "официальная проверка"],
+      ["READY", "источник подтверждён"],
+      ["EP_TASK_CREATED", "задача ЕР-Конфигуратору"],
+      ["CONFIGURING", "подбор параметров"],
+      ["LOADING", "загрузка данных"],
+      ["PUBLISHED", "реплика опубликована"]
+    ];
+
+    const els = {
+      messages: document.getElementById("messages"),
+      chat: document.getElementById("chat"),
+      form: document.getElementById("form"),
+      input: document.getElementById("input"),
+      send: document.getElementById("send"),
+      orderId: document.getElementById("orderId"),
+      sourceId: document.getElementById("sourceId"),
+      statusBadge: document.getElementById("statusBadge"),
+      taskIds: document.getElementById("taskIds"),
+      correlationId: document.getElementById("correlationId"),
+      rail: document.getElementById("rail")
+    };
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options
+      });
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${await response.text()}`);
+      }
+      return response.json();
+    }
+
+    function setBusy(value) {
+      state.busy = value;
+      els.send.disabled = value;
+      document.querySelectorAll(".chip").forEach((button) => { button.disabled = value; });
+    }
+
+    function badgeClass(status) {
+      if (status === "READY") return "badge ready";
+      if (status === "WAITING_CR" || status === "VALIDATING") return "badge wait";
+      if (status === "FAILED") return "badge fail";
+      return "badge";
+    }
+
+    function updateOrder(order) {
+      state.order = order;
+      els.orderId.textContent = order?.order_id || "ещё не создан";
+      els.sourceId.textContent = order?.source_id || "-";
+      els.statusBadge.textContent = order?.status || "idle";
+      els.statusBadge.className = badgeClass(order?.status);
+      els.taskIds.textContent = order?.cr_task_ids?.length ? order.cr_task_ids.join(", ") : "-";
+      els.correlationId.textContent = order?.correlation_id || "-";
+      renderRail(order?.status || "IDLE", Boolean(order?.replica_started));
+    }
+
+    function renderRail(status, epStarted) {
+      const activeMap = {
+        CREATED: 0,
+        VALIDATING: 1,
+        WAITING_CR: 2,
+        READY: 4,
+        FAILED: 2
+      };
+      const active = activeMap[status] ?? -1;
+      els.rail.innerHTML = "";
+      railSteps.forEach(([name, label], index) => {
+        const row = document.createElement("div");
+        row.className = "rail-step";
+        if (index < active) row.classList.add("done");
+        if (index === active) row.classList.add("active");
+        if (epStarted && index <= 5) row.classList.add("done");
+        row.innerHTML = `<div class="dot"></div><div><strong>${name}</strong><br><span>${label}</span></div>`;
+        els.rail.appendChild(row);
+      });
+    }
+
+    function addMessage(agentKey, text) {
+      const agent = agents[agentKey];
+      const wrap = document.createElement("div");
+      wrap.className = `message ${agentKey === "user" ? "user-message" : ""}`;
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${agent.cls}`;
+      avatar.textContent = agent.avatar;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.innerHTML = `<span class="speaker">${agent.label}</span>${escapeHtml(text)}`;
+
+      if (agentKey === "user") {
+        wrap.appendChild(bubble);
+        wrap.appendChild(avatar);
+      } else {
+        wrap.appendChild(avatar);
+        wrap.appendChild(bubble);
+      }
+
+      els.messages.appendChild(wrap);
+      els.chat.scrollTop = els.chat.scrollHeight;
+    }
+
+    async function addTyping(agentKey, ms = 520) {
+      const agent = agents[agentKey];
+      const wrap = document.createElement("div");
+      wrap.className = "message";
+      wrap.innerHTML = `
+        <div class="avatar ${agent.cls}">${agent.avatar}</div>
+        <div class="bubble"><span class="speaker">${agent.label}</span><span class="typing"><span></span><span></span><span></span></span></div>
+      `;
+      els.messages.appendChild(wrap);
+      els.chat.scrollTop = els.chat.scrollHeight;
+      await wait(ms);
+      wrap.remove();
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function detectSource(text) {
+      const upper = text.toUpperCase();
+      if (upper.includes("SRC-READY") || upper.includes("READY")) return "SRC-READY";
+      if (upper.includes("SRC-FAIL") || upper.includes("FAILED") || upper.includes("FAIL")) return "SRC-FAIL";
+      if (upper.includes("SRC-123") || upper.includes("CR")) return "SRC-123";
+      return null;
+    }
+
+    async function refreshTrace() {
+      if (!state.order?.correlation_id) return [];
+      state.trace = await api(`/trace/${state.order.correlation_id}`);
+      return state.trace;
+    }
+
+    async function createOrder(sourceId) {
+      const order = await api("/order", {
+        method: "POST",
+        body: JSON.stringify({ source_id: sourceId, request: "загрузить реплику" })
+      });
+      updateOrder(order);
+      await refreshTrace();
+      return order;
+    }
+
+    async function completeLatestTask() {
+      const order = state.order;
+      const taskId = order?.cr_task_ids?.[order.cr_task_ids.length - 1];
+      if (!order || !taskId) return order;
+      const updated = await api(`/order/${order.order_id}/task-completed`, {
+        method: "POST",
+        body: JSON.stringify({ cr_id: taskId, status: "done", self_check_passed: true })
+      });
+      updateOrder(updated);
+      await refreshTrace();
+      return updated;
+    }
+
+    async function runConversation(sourceId) {
+      setBusy(true);
+      try {
+        await addTyping("coordinator");
+        addMessage("coordinator", `Принял запрос. Создаю предзаказ для источника ${sourceId} и присваиваю correlation_id.`);
+
+        await wait(420);
+        const order = await createOrder(sourceId);
+
+        await addTyping("coordinator");
+        addMessage("coordinator", `Предзаказ создан: ${order.order_id}. Текущий статус: ${order.status}.`);
+
+        if (sourceId === "SRC-READY") {
+          await addTyping("warp");
+          addMessage("warp", "Проверка источника завершена. Источник соответствует критериям, статус READY.");
+          await addTyping("ep");
+          addMessage("ep", "Получаю задачу после READY. Следующий шаг: создать заказ в Jira-пространстве ЕР и начать подбор параметров реплики.");
+          return;
+        }
+
+        await addTyping("warp");
+        addMessage("warp", sourceId === "SRC-FAIL"
+          ? "Источник не готов. Обнаружена проблема C5, возможна регрессия."
+          : "Источник не готов. Не выполнены критерии C1 и C3.P2.");
+
+        await addTyping("coordinator");
+        addMessage("coordinator", `Перевожу предзаказ в WAITING_CR и отправляю CR-задачу: ${order.cr_task_ids[0]}.`);
+
+        if (sourceId === "SRC-FAIL") {
+          let current = order;
+          while (current.status === "WAITING_CR") {
+            await addTyping("cr");
+            addMessage("cr", `Пытаюсь исправить критерии. Закрываю задачу ${current.cr_task_ids[current.cr_task_ids.length - 1]} и прошу Координатора сделать final-check.`);
+            current = await completeLatestTask();
+            await addTyping("warp");
+            if (current.status === "WAITING_CR") {
+              addMessage("warp", "Final-check снова вернул NOT_READY. Требуется повторная CR-задача.");
+              await addTyping("coordinator");
+              addMessage("coordinator", `Создал следующую CR-задачу: ${current.cr_task_ids[current.cr_task_ids.length - 1]}. Попытка ${current.attempts}.`);
+            }
+          }
+          await addTyping("coordinator");
+          addMessage("coordinator", `Лимит попыток исчерпан. Итоговый статус предзаказа: ${current.status}. Нужна эскалация человеку с trace-контекстом.`);
+          return;
+        }
+
+        await addTyping("cr");
+        addMessage("cr", `CR-задача ${order.cr_task_ids[0]} выполнена. Self-check прошёл, сообщаю Координатору.`);
+
+        const readyOrder = await completeLatestTask();
+        await addTyping("warp");
+        addMessage("warp", "Official final-check завершён. Источник готов, возвращаю READY.");
+
+        await addTyping("ep");
+        addMessage("ep", `Получаю предзаказ ${readyOrder.order_id} после READY. Начинаю подготовку заказа в Jira ЕР и генерацию конфига.`);
+      } catch (error) {
+        addMessage("coordinator", `Ошибка выполнения сценария: ${error.message}`);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function answerQuestion(text) {
+      const lower = text.toLowerCase();
+      if (!state.order) {
+        return "Пока нет активного предзаказа. Напиши, например: «Хочу загрузить реплику для SRC-123».";
+      }
+      if (lower.includes("статус")) {
+        return `Сейчас предзаказ ${state.order.order_id} находится в статусе ${state.order.status}. Источник: ${state.order.source_id}.`;
+      }
+      if (lower.includes("ready")) {
+        return "READY — это рубеж: WARP официально подтвердил источник. После READY Координатор передаёт задачу ЕР-Конфигуратору.";
+      }
+      if (lower.includes("trace") || lower.includes("лог")) {
+        return `Trace доступен по correlation_id ${state.order.correlation_id}. Сейчас собрано ${state.trace.length} событий.`;
+      }
+      if (lower.includes("cr") || lower.includes("задач")) {
+        return state.order.cr_task_ids.length
+          ? `CR-задачи этого предзаказа: ${state.order.cr_task_ids.join(", ")}.`
+          : "CR-задачи не создавались, потому что источник сразу дошёл до READY.";
+      }
+      return `Я вижу предзаказ ${state.order.order_id}: источник ${state.order.source_id}, статус ${state.order.status}.`;
+    }
+
+    async function handleInput(text) {
+      const source = detectSource(text);
+      addMessage("user", text);
+      if (source) {
+        await runConversation(source);
+        return;
+      }
+      await addTyping("coordinator", 360);
+      addMessage("coordinator", answerQuestion(text));
+    }
+
+    els.form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = els.input.value.trim();
+      if (!text || state.busy) return;
+      els.input.value = "";
+      await handleInput(text);
+    });
+
+    els.input.addEventListener("input", () => {
+      els.input.style.height = "auto";
+      els.input.style.height = `${Math.min(140, els.input.scrollHeight)}px`;
+    });
+
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (state.busy) return;
+        await handleInput(button.dataset.prompt);
+      });
+    });
+
+    renderRail("IDLE", false);
+    addMessage("coordinator", "Я готов. Напиши: «Хочу загрузить реплику для SRC-123», и я покажу, как агенты начнут общаться между собой.");
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+
+from agents.coordinator.api.routes import router as coordinator_router
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="Agentic Replica Readiness Platform")
+    app.include_router(coordinator_router)
+
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    async def index() -> str:
+        return (STATIC_DIR / "agent_console.html").read_text(encoding="utf-8")
+
+    @app.get("/console", response_class=HTMLResponse, include_in_schema=False)
+    async def console() -> str:
+        return (STATIC_DIR / "agent_console.html").read_text(encoding="utf-8")
+
+    return app
+
+
+app = create_app()
