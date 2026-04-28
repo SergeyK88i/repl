@@ -45,14 +45,15 @@
     .app {
       min-height: 100vh;
       display: grid;
-      grid-template-rows: 58px 1fr;
+      grid-template-rows: auto 1fr;
     }
 
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 22px;
+      gap: 18px;
+      padding: 10px 22px;
       border-bottom: 1px solid var(--line);
       background: rgba(243, 243, 241, 0.88);
       backdrop-filter: blur(12px);
@@ -76,8 +77,50 @@
       font-size: 13px;
     }
 
-    .topbar small {
+    .topbar-roster {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      gap: 8px;
+      width: min(860px, 72vw);
+    }
+
+    .top-agent {
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 8px;
+      align-items: start;
+      min-height: 44px;
+      padding: 8px 9px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    .agent-color {
+      width: 10px;
+      height: 10px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: var(--black);
+    }
+
+    .agent-color.user { background: var(--user); }
+    .agent-color.coord { background: var(--coord); }
+    .agent-color.warp { background: var(--warp); }
+    .agent-color.cr { background: var(--cr); }
+    .agent-color.ep { background: var(--ep); }
+
+    .top-agent strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+
+    .top-agent span {
+      display: block;
       color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
     }
 
     .layout {
@@ -87,7 +130,7 @@
       display: grid;
       grid-template-columns: 320px minmax(0, 1fr);
       gap: 16px;
-      min-height: calc(100vh - 58px);
+      min-height: calc(100vh - 78px);
     }
 
     .sidebar,
@@ -361,6 +404,13 @@
       min-width: 46px;
     }
 
+    .thinking-note {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .typing span {
       width: 6px;
       height: 6px;
@@ -433,15 +483,25 @@
       .sidebar {
         grid-template-rows: auto;
       }
+
+      .topbar {
+        display: grid;
+        align-items: start;
+      }
+
+      .topbar-roster {
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 640px) {
       .topbar {
-        padding: 0 12px;
+        padding: 10px 12px;
       }
 
-      .topbar small {
-        display: none;
+      .topbar-roster {
+        grid-template-columns: 1fr;
       }
 
       .layout {
@@ -482,7 +542,28 @@
         <div class="brand-mark">AI</div>
         <span>Agent Room</span>
       </div>
-      <small>Пользователь · Координатор · WARP · CR Manager · ЕР-Конфигуратор</small>
+      <div class="topbar-roster" aria-label="Кто находится в комнате агентов">
+        <div class="top-agent">
+          <div class="agent-color user"></div>
+          <div><strong>Пользователь</strong><span>создаёт предзаказ и задаёт вопросы</span></div>
+        </div>
+        <div class="top-agent">
+          <div class="agent-color coord"></div>
+          <div><strong>Координатор</strong><span>ведёт статус и маршрут</span></div>
+        </div>
+        <div class="top-agent">
+          <div class="agent-color warp"></div>
+          <div><strong>WARP</strong><span>проверяет готовность</span></div>
+        </div>
+        <div class="top-agent">
+          <div class="agent-color cr"></div>
+          <div><strong>CR Manager</strong><span>исправляет критерии</span></div>
+        </div>
+        <div class="top-agent">
+          <div class="agent-color ep"></div>
+          <div><strong>ЕР-Конфигуратор</strong><span>стартует после READY</span></div>
+        </div>
+      </div>
     </header>
 
     <main class="layout">
@@ -495,29 +576,8 @@
         </section>
 
         <section class="side-section">
-          <h2>Участники</h2>
-          <div class="agent-list">
-            <div class="agent">
-              <div class="avatar user">Я</div>
-              <div><strong>Пользователь</strong><span>создаёт предзаказ и задаёт вопросы</span></div>
-            </div>
-            <div class="agent">
-              <div class="avatar coord">К</div>
-              <div><strong>Координатор</strong><span>ведёт статус и маршрутизирует процесс</span></div>
-            </div>
-            <div class="agent">
-              <div class="avatar warp">W</div>
-              <div><strong>WARP</strong><span>проверяет готовность источника</span></div>
-            </div>
-            <div class="agent">
-              <div class="avatar cr">CR</div>
-              <div><strong>CR Manager</strong><span>исправляет failed criteria</span></div>
-            </div>
-            <div class="agent">
-              <div class="avatar ep">EP</div>
-              <div><strong>ЕР-Конфигуратор</strong><span>стартует после READY</span></div>
-            </div>
-          </div>
+          <h2>Путь процесса</h2>
+          <div class="rail" id="rail"></div>
         </section>
 
         <section class="side-section">
@@ -531,10 +591,6 @@
           </div>
         </section>
 
-        <section class="side-section">
-          <h2>Путь процесса</h2>
-          <div class="rail" id="rail"></div>
-        </section>
       </aside>
 
       <section class="room">
@@ -550,6 +606,7 @@
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-READY">SRC-READY</button>
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-123">SRC-123</button>
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-FAIL">SRC-FAIL</button>
+            <button class="chip" id="newDialog" type="button">Новый диалог</button>
           </div>
         </div>
 
@@ -571,7 +628,8 @@
     const state = {
       order: null,
       busy: false,
-      trace: []
+      trace: [],
+      scenarioFinished: false
     };
 
     const agents = {
@@ -626,7 +684,9 @@
     function setBusy(value) {
       state.busy = value;
       els.send.disabled = value;
-      document.querySelectorAll(".chip").forEach((button) => { button.disabled = value; });
+      document.querySelectorAll(".chip").forEach((button) => {
+        if (button.id !== "newDialog") button.disabled = value;
+      });
     }
 
     function badgeClass(status) {
@@ -691,17 +751,21 @@
       els.chat.scrollTop = els.chat.scrollHeight;
     }
 
-    async function addTyping(agentKey, ms = 520) {
+    async function addTyping(agentKey, ms = 1600, note = "размышляет") {
       const agent = agents[agentKey];
       const wrap = document.createElement("div");
       wrap.className = "message";
       wrap.innerHTML = `
         <div class="avatar ${agent.cls}">${agent.avatar}</div>
-        <div class="bubble"><span class="speaker">${agent.label}</span><span class="typing"><span></span><span></span><span></span></span></div>
+        <div class="bubble">
+          <span class="speaker">${agent.label}</span>
+          <span class="thinking-note">${escapeHtml(note)}</span>
+          <span class="typing"><span></span><span></span><span></span></span>
+        </div>
       `;
       els.messages.appendChild(wrap);
       els.chat.scrollTop = els.chat.scrollHeight;
-      await wait(ms);
+      await wait(ms + 2000);
       wrap.remove();
     }
 
@@ -752,58 +816,61 @@
     async function runConversation(sourceId) {
       setBusy(true);
       try {
-        await addTyping("coordinator");
+        await addTyping("coordinator", 1700, "разбирает запрос пользователя");
         addMessage("coordinator", `Принял запрос. Создаю предзаказ для источника ${sourceId} и присваиваю correlation_id.`);
 
-        await wait(420);
+        await wait(650);
         const order = await createOrder(sourceId);
 
-        await addTyping("coordinator");
+        await addTyping("coordinator", 1400, "фиксирует предзаказ и текущий статус");
         addMessage("coordinator", `Предзаказ создан: ${order.order_id}. Текущий статус: ${order.status}.`);
 
         if (sourceId === "SRC-READY") {
-          await addTyping("warp");
+          await addTyping("warp", 1900, "проверяет критерии готовности источника");
           addMessage("warp", "Проверка источника завершена. Источник соответствует критериям, статус READY.");
-          await addTyping("ep");
+          await addTyping("ep", 1700, "готовит старт работ после READY");
           addMessage("ep", "Получаю задачу после READY. Следующий шаг: создать заказ в Jira-пространстве ЕР и начать подбор параметров реплики.");
+          state.scenarioFinished = true;
           return;
         }
 
-        await addTyping("warp");
+        await addTyping("warp", 2000, "сравнивает источник с критериями WARP");
         addMessage("warp", sourceId === "SRC-FAIL"
           ? "Источник не готов. Обнаружена проблема C5, возможна регрессия."
           : "Источник не готов. Не выполнены критерии C1 и C3.P2.");
 
-        await addTyping("coordinator");
+        await addTyping("coordinator", 1500, "выбирает маршрут для исправлений");
         addMessage("coordinator", `Перевожу предзаказ в WAITING_CR и отправляю CR-задачу: ${order.cr_task_ids[0]}.`);
 
         if (sourceId === "SRC-FAIL") {
           let current = order;
           while (current.status === "WAITING_CR") {
-            await addTyping("cr");
+            await addTyping("cr", 1800, "пытается применить remediation-инструкции");
             addMessage("cr", `Пытаюсь исправить критерии. Закрываю задачу ${current.cr_task_ids[current.cr_task_ids.length - 1]} и прошу Координатора сделать final-check.`);
             current = await completeLatestTask();
-            await addTyping("warp");
+            await addTyping("warp", 1900, "делает official final-check");
             if (current.status === "WAITING_CR") {
               addMessage("warp", "Final-check снова вернул NOT_READY. Требуется повторная CR-задача.");
-              await addTyping("coordinator");
+              await addTyping("coordinator", 1300, "проверяет лимит попыток");
               addMessage("coordinator", `Создал следующую CR-задачу: ${current.cr_task_ids[current.cr_task_ids.length - 1]}. Попытка ${current.attempts}.`);
             }
           }
-          await addTyping("coordinator");
+          await addTyping("coordinator", 1600, "готовит эскалацию человеку");
           addMessage("coordinator", `Лимит попыток исчерпан. Итоговый статус предзаказа: ${current.status}. Нужна эскалация человеку с trace-контекстом.`);
+          state.scenarioFinished = true;
           return;
         }
 
-        await addTyping("cr");
+        await addTyping("cr", 1800, "выполняет исправления и self-check");
         addMessage("cr", `CR-задача ${order.cr_task_ids[0]} выполнена. Self-check прошёл, сообщаю Координатору.`);
 
         const readyOrder = await completeLatestTask();
-        await addTyping("warp");
+        await addTyping("warp", 1800, "делает official final-check после исправлений");
         addMessage("warp", "Official final-check завершён. Источник готов, возвращаю READY.");
 
-        await addTyping("ep");
+        await addTyping("ep", 1700, "принимает работу после READY");
         addMessage("ep", `Получаю предзаказ ${readyOrder.order_id} после READY. Начинаю подготовку заказа в Jira ЕР и генерацию конфига.`);
+        state.scenarioFinished = true;
       } catch (error) {
         addMessage("coordinator", `Ошибка выполнения сценария: ${error.message}`);
       } finally {
@@ -835,13 +902,27 @@
 
     async function handleInput(text) {
       const source = detectSource(text);
+      if (source && state.scenarioFinished) {
+        resetDialog(false);
+      }
       addMessage("user", text);
       if (source) {
         await runConversation(source);
         return;
       }
-      await addTyping("coordinator", 360);
+      await addTyping("coordinator", 900, "ищет ответ по текущему контексту");
       addMessage("coordinator", answerQuestion(text));
+    }
+
+    function resetDialog(withGreeting = true) {
+      state.order = null;
+      state.trace = [];
+      state.scenarioFinished = false;
+      updateOrder(null);
+      els.messages.innerHTML = "";
+      if (withGreeting) {
+        addMessage("coordinator", "Начали новый диалог. Напиши: «Хочу загрузить реплику для SRC-123», и я покажу общение агентов.");
+      }
     }
 
     els.form.addEventListener("submit", async (event) => {
@@ -862,6 +943,11 @@
         if (state.busy) return;
         await handleInput(button.dataset.prompt);
       });
+    });
+
+    document.getElementById("newDialog").addEventListener("click", () => {
+      if (state.busy) return;
+      resetDialog(true);
     });
 
     renderRail("IDLE", false);
