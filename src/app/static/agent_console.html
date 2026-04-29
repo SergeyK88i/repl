@@ -550,6 +550,162 @@
       gap: 18px;
     }
 
+    .orchestration-map {
+      position: relative;
+      min-height: 520px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background:
+        linear-gradient(90deg, rgba(49, 95, 159, 0.06) 0 1px, transparent 1px 100%),
+        linear-gradient(0deg, rgba(22, 116, 102, 0.06) 0 1px, transparent 1px 100%),
+        #fbfbfa;
+      background-size: 38px 38px;
+      overflow: hidden;
+    }
+
+    .orchestration-node {
+      position: absolute;
+      width: 190px;
+      min-height: 112px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-top: 6px solid var(--coord);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: 0 12px 28px rgba(31, 35, 40, 0.09);
+      z-index: 2;
+    }
+
+    .orchestration-node.center {
+      left: calc(50% - 105px);
+      top: calc(50% - 62px);
+      width: 210px;
+      min-height: 124px;
+      border-color: #b8c8e3;
+      border-top-color: var(--coord);
+      background: #f4f8ff;
+    }
+
+    .orchestration-node.user-node {
+      left: 34px;
+      top: 36px;
+      border-top-color: var(--user);
+    }
+
+    .orchestration-node.warp-node {
+      right: 34px;
+      top: 36px;
+      border-top-color: var(--warp);
+    }
+
+    .orchestration-node.cr-node {
+      left: 34px;
+      bottom: 36px;
+      border-top-color: var(--cr);
+    }
+
+    .orchestration-node.ep-node {
+      right: 34px;
+      bottom: 36px;
+      border-top-color: var(--ep);
+    }
+
+    .orchestration-node strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 16px;
+    }
+
+    .orchestration-node span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .orchestration-line {
+      position: absolute;
+      height: 2px;
+      background: #9aa5b1;
+      transform-origin: left center;
+      z-index: 1;
+    }
+
+    .orchestration-line::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 8px solid #9aa5b1;
+    }
+
+    .line-user {
+      left: 215px;
+      top: 102px;
+      width: calc(50% - 305px);
+      transform: rotate(25deg);
+    }
+
+    .line-warp {
+      left: calc(50% + 106px);
+      top: 232px;
+      width: calc(50% - 322px);
+      transform: rotate(-28deg);
+    }
+
+    .line-cr {
+      left: 220px;
+      bottom: 116px;
+      width: calc(50% - 308px);
+      transform: rotate(-24deg);
+    }
+
+    .line-ep {
+      left: calc(50% + 106px);
+      bottom: 236px;
+      width: calc(50% - 322px);
+      transform: rotate(27deg);
+    }
+
+    .flow-label {
+      position: absolute;
+      max-width: 180px;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #3f464d;
+      font-size: 12px;
+      line-height: 1.25;
+      z-index: 3;
+    }
+
+    .label-user { left: 236px; top: 86px; }
+    .label-warp { right: 238px; top: 102px; }
+    .label-cr { left: 226px; bottom: 92px; }
+    .label-ep { right: 226px; bottom: 92px; }
+
+    .orchestration-caption {
+      position: absolute;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      width: min(520px, calc(100% - 48px));
+      padding: 12px 14px;
+      border: 1px solid #b8e7ca;
+      border-radius: 14px;
+      background: #ecfdf3;
+      color: var(--ready);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      z-index: 4;
+    }
+
     .diagram-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 94px minmax(0, 1fr);
@@ -833,6 +989,31 @@
       .agent-detail {
         grid-template-columns: 1fr;
       }
+
+      .orchestration-map {
+        min-height: auto;
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .orchestration-node,
+      .orchestration-node.center,
+      .orchestration-node.user-node,
+      .orchestration-node.warp-node,
+      .orchestration-node.cr-node,
+      .orchestration-node.ep-node,
+      .orchestration-caption {
+        position: static;
+        width: auto;
+        min-height: auto;
+        transform: none;
+      }
+
+      .orchestration-line,
+      .flow-label {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -938,6 +1119,45 @@
       </div>
 
       <div class="diagram">
+        <div class="orchestration-map" aria-label="Координатор в центре оркестрации">
+          <div class="orchestration-node center">
+            <strong>Координатор</strong>
+            <span>Центр оркестрации: принимает предзаказ, держит статус, вызывает агентов и решает следующий шаг по правилам процесса.</span>
+          </div>
+
+          <div class="orchestration-node user-node">
+            <strong>Пользователь</strong>
+            <span>Создаёт предзаказ и видит объяснение процесса в чате.</span>
+          </div>
+
+          <div class="orchestration-node warp-node">
+            <strong>WARP</strong>
+            <span>Проверяет готовность источника и возвращает READY / NOT_READY.</span>
+          </div>
+
+          <div class="orchestration-node cr-node">
+            <strong>CR Manager</strong>
+            <span>Получает failed criteria и выполняет исправления через коннекторы.</span>
+          </div>
+
+          <div class="orchestration-node ep-node">
+            <strong>ЕР-Конфигуратор</strong>
+            <span>Подключается после READY: создаёт заказ ЕР, подбирает параметры и готовит конфиг.</span>
+          </div>
+
+          <div class="orchestration-line line-user"></div>
+          <div class="orchestration-line line-warp"></div>
+          <div class="orchestration-line line-cr"></div>
+          <div class="orchestration-line line-ep"></div>
+
+          <div class="flow-label label-user">создаёт предзаказ</div>
+          <div class="flow-label label-warp">readiness check и final-check</div>
+          <div class="flow-label label-cr">задача на исправление</div>
+          <div class="flow-label label-ep">handoff после READY</div>
+
+          <div class="orchestration-caption">READY — контрольная точка: источник подтверждён, можно переходить от предзаказа к созданию реплики.</div>
+        </div>
+
         <div class="diagram-grid">
           <div class="diagram-phase">
             <h3>До READY: подготовка источника</h3>
