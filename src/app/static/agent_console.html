@@ -1199,14 +1199,7 @@
                 <span>создаёт CR-задачу и выполняет исправления</span>
               </div>
             </div>
-            <div class="exchange-list">
-              <div class="exchange">Пользователь формулирует запрос → Агент требований проверяет СДО и атрибутный состав.</div>
-              <div class="exchange">Агент требований передаёт валидный предзаказ Координатору → Координатор фиксирует `correlation_id`.</div>
-              <div class="exchange">Координатор спрашивает WARP: готов ли источник?</div>
-              <div class="exchange">Если NOT_READY, Координатор передаёт failed criteria CR Manager.</div>
-              <div class="exchange">CR Manager исправляет и сообщает Координатору результат self-check.</div>
-              <div class="exchange">Координатор делает официальный final-check через WARP.</div>
-            </div>
+            
           </div>
 
           <div class="ready-column">
@@ -1232,13 +1225,7 @@
                 <span>проверяет и публикует результат</span>
               </div>
             </div>
-            <div class="exchange-list">
-              <div class="exchange">Координатор передаёт READY-предзаказ ЕР-Конфигуратору.</div>
-              <div class="exchange">ЕР-Конфигуратор подбирает параметры реплики.</div>
-              <div class="exchange">ЕР-Конфигуратор генерирует конфиг для ЕР.</div>
-              <div class="exchange">Init Loader запускает загрузку.</div>
-              <div class="exchange">Публикатор завершает процесс и делает результат доступным.</div>
-            </div>
+            
           </div>
         </div>
 
