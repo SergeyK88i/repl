@@ -404,6 +404,21 @@
       border-color: var(--black);
     }
 
+    .bubble a {
+      color: var(--coord);
+      font-weight: 800;
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+    }
+
+    .bubble a:hover {
+      color: #1f4f8f;
+    }
+
+    .user-message .bubble a {
+      color: #ffffff;
+    }
+
     .speaker {
       display: block;
       margin-bottom: 4px;
@@ -1293,19 +1308,19 @@
           <p id="agentPurpose"></p>
         </div>
         <div class="agent-detail-card">
-          <h3>Skills</h3>
+          <h3 id="agentDoesTitle">Что умеет</h3>
           <ul id="agentDoes"></ul>
         </div>
         <div class="agent-detail-card">
-          <h3>Вход</h3>
+          <h3 id="agentInputTitle">Вход</h3>
           <ul id="agentDoesNot"></ul>
         </div>
         <div class="agent-detail-card">
-          <h3>Выход</h3>
+          <h3 id="agentOutputTitle">Выход</h3>
           <ul id="agentOutput"></ul>
         </div>
         <div class="agent-detail-card">
-          <h3>Граница ответственности</h3>
+          <h3 id="agentBoundaryTitle">Граница ответственности</h3>
           <ul id="agentBoundary"></ul>
         </div>
       </div>
@@ -1415,29 +1430,35 @@
     const agentDetails = {
       user: {
         title: "Пользователь",
-        subtitle: "Инициатор предзаказа и получатель объяснений",
-        purpose: "Формулирует потребность: какой источник нужен, какие поля требуется получить и зачем нужна будущая реплика.",
+        subtitle: "Инициатор предзаказа",
+        profileLabels: {
+          does: "Что передаёт",
+          input: "Откуда берёт данные",
+          output: "Что получает",
+          boundary: "Где не участвует"
+        },
+        purpose: "Человек на входе процесса. Он выбирает источник, указывает КЭ и атрибутный состав, по которому нужно оформить предзаказ.",
         does: [
-          "выбирает источник данных",
-          "передаёт КЭ источника, например CM12345",
-          "выбирает атрибуты или поля таблицы для заказа",
-          "задаёт вопросы агентам простым языком"
+          "КЭ источника, например CM12345",
+          "список нужных атрибутов или полей таблицы",
+          "уточнения, если агенту требований не хватает данных"
         ],
         doesNot: [
-          "source_id или КЭ источника",
-          "список выбранных атрибутов",
-          "цель загрузки реплики",
-          "уточнения по запросу"
+          "интерфейс оформления предзаказа",
+          "каталог источников",
+          "описание бизнес-потребности",
+          "подсказки от Агента управления требованиями"
         ],
         output: [
-          "создаёт черновик предзаказа",
+          "предзаказ принят в проверку",
           "получает понятный статус процесса",
           "видит, на каком шаге находится подготовка источника"
         ],
         boundary: [
-          "не меняет системные статусы",
-          "не проверяет готовность источника",
-          "не запускает технические действия"
+          "не управляет агентами напрямую",
+          "не меняет статусы предзаказа",
+          "не проверяет техническую готовность источника",
+          "не запускает CR или ЕР-действия"
         ]
       },
       req: {
@@ -1687,7 +1708,7 @@
       avatar.textContent = agent.avatar;
       const bubble = document.createElement("div");
       bubble.className = "bubble";
-      bubble.innerHTML = `<span class="speaker">${agent.label}</span>${escapeHtml(text)}`;
+      bubble.innerHTML = `<span class="speaker">${agent.label}</span>${renderMessageText(text)}`;
 
       if (agentKey === "user") {
         wrap.appendChild(bubble);
@@ -1724,6 +1745,17 @@
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;");
+    }
+
+    function renderMessageText(text) {
+      return escapeHtml(text).replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+    }
+
+    function crLink(taskId) {
+      return `[CR ${taskId}](https://jira.example/browse/${taskId})`;
     }
 
     function detectSource(text) {
@@ -1768,66 +1800,117 @@
     async function runConversation(sourceId) {
       setBusy(true);
       try {
-        await addTyping("req", 1600, "проверяет запрос и обязательные атрибуты");
-        addMessage("req", `Вижу запрос на предзаказ по источнику ${sourceId}. Проверяю КЭ источника, выбранные атрибуты и то, можно ли отправлять этот набор на согласование в СДО.`);
+        const isCmRequest = sourceId.startsWith("CM");
+        const requestedFields = isCmRequest ? "customer_id, balance, updated_at" : "набор атрибутов из заявки";
+        const sourceTitle = isCmRequest ? `КЭ источника ${sourceId}` : `источник ${sourceId}`;
 
-        await addTyping("req", 1500, "согласует предзаказ с СДО");
-        addMessage("req", "Атрибутный состав выглядит корректно, СДО подтвердил возможность такого предзаказа. Передаю Координатору уже не свободный текст, а проверенную заявку.");
+        await addTyping("req", 1800, "читает заявку и выделяет ключевые поля");
+        addMessage("req", `Принял заявку. Вижу ${sourceTitle} и запрошенные атрибуты: ${requestedFields}. Сначала проверю, достаточно ли этих данных, чтобы безопасно оформить предзаказ.`);
 
-        await addTyping("coordinator", 1700, "разбирает запрос пользователя");
-        addMessage("coordinator", `Принял валидный предзаказ от Агента требований. Создаю процесс для ${sourceId}, фиксирую preorder_id и correlation_id, дальше проверяю источник через WARP.`);
+        await addTyping("req", 1700, "сверяет атрибутный состав с СДО");
+        addMessage("req", "Обязательные поля заполнены, атрибутный состав выглядит корректно. Отправляю запрос в СДО, чтобы подтвердить, что такой предзаказ можно брать в работу.");
+
+        await addTyping("req", 1500, "получает подтверждение от СДО");
+        addMessage("req", "СДО подтвердил заявку. Передаю Координатору проверенный предзаказ: источник, КЭ, выбранные атрибуты и цель будущей реплики.");
+
+        await addTyping("coordinator", 1800, "создаёт процесс и связывает участников");
+        addMessage("coordinator", `Предзаказ принят в работу. Я фиксирую его в процессе, назначаю номер отслеживания и запускаю проверку готовности через WARP. До ответа WARP это ещё не заказ.`);
 
         await wait(650);
         const order = await createOrder(sourceId);
 
-        await addTyping("coordinator", 1400, "фиксирует предзаказ и текущий статус");
-        addMessage("coordinator", `Предзаказ зарегистрирован: ${order.order_id}. Сейчас это ещё не заказ, текущий статус: ${order.status}.`);
+        await addTyping("coordinator", 1500, "фиксирует предзаказ и текущий статус");
+        addMessage("coordinator", `Предзаказ зарегистрирован: ${order.order_id}. Текущий статус: ${order.status}. Теперь жду официальный результат готовности источника.`);
 
         if (sourceId === "SRC-READY") {
-          await addTyping("warp", 1900, "проверяет критерии готовности источника");
-          addMessage("warp", "Проверка завершена: готовность 100%. Блокирующих критериев нет, источник можно переводить в READY.");
-          await addTyping("ep", 1700, "готовит старт работ после READY");
-          addMessage("ep", "Получаю уже READY-заказ. Начинаю пост-READY контур: создаю заказ в ЕР-пространстве, подбираю параметры реплики и готовлю конфиг.");
+          await addTyping("warp", 2200, "проверяет источник по критериям готовности");
+          addMessage("warp", "Проверка завершена: все критерии готовности выполнены. Источник можно использовать для создания реплики.");
+
+          await addTyping("coordinator", 1600, "обновляет статус предзаказа");
+          addMessage("coordinator", "Принял результат WARP. Меняю статус предзаказа на READY: источник подтверждён, теперь можно передавать работу в ЕР-контур.");
+
+          await addTyping("ep", 1900, "принимает заказ после READY");
+          addMessage("ep", "Получаю заказ после READY. Начинаю ЕР-контур: создам задачу в нужном пространстве, подберу параметры реплики и подготовлю конфиг.");
           state.scenarioFinished = true;
           return;
         }
 
-        await addTyping("warp", 2000, "сравнивает источник с критериями WARP");
+        await addTyping("warp", 2300, "сравнивает источник с критериями готовности");
         addMessage("warp", sourceId === "SRC-FAIL"
-          ? "Готовность ниже 100%: критерий C5 не закрыт, вижу признак регрессии. Для перехода в заказ это блокер."
-          : "Готовность ниже 100%: не закрыты C1 и C3.P2. Это блокирует READY, нужен CR-контур доработки источника.");
+          ? "Готовность ниже 100%. Критерий C5 не закрыт, вижу признак регрессии. Это блокер: предзаказ нельзя превращать в заказ."
+          : "Готовность ниже 100%. Не закрыты C1 и C3.P2. Это блокирует READY, поэтому нужен CR-контур доработки источника.");
 
-        await addTyping("coordinator", 1500, "выбирает маршрут для исправлений");
-        addMessage("coordinator", `Фиксирую WAITING_CR. Предзаказ не может стать заказом, пока WARP не даст 100%. Передаю CR Manager задачу ${order.cr_task_ids[0]} и список блокирующих критериев.`);
+        await addTyping("coordinator", 1700, "принимает решение по маршруту");
+        addMessage("coordinator", `Фиксирую WAITING_CR. Предзаказ остаётся предзаказом, пока WARP не подтвердит 100%. Передаю CR Manager задачу ${crLink(order.cr_task_ids[0])} и список блокирующих критериев.`);
 
         if (sourceId === "SRC-FAIL") {
           let current = order;
+          const failAttempts = [
+            {
+              focus: "проверяю C5: расхождение найдено в параметрах подготовки источника",
+              subagents: "подключаю субагента плана A и инструмент проверки конфигурации",
+              result: "часть параметров поправлена, но self-check всё ещё показывает риск регрессии"
+            },
+            {
+              focus: "перехожу к повторной доработке C5: проверяю, почему первый план не дал 100%",
+              subagents: "подключаю план A+ и прошу субагента сверить зависимые настройки",
+              result: "найдена зависимая настройка, но после исправления WARP всё ещё видит неполную готовность"
+            },
+            {
+              focus: "делаю последнюю CR-итерацию в рамках лимита",
+              subagents: "собираю отчёты субагентов и формирую полный контекст для возможной эскалации",
+              result: "автоматически закрыть критерий не удалось, нужен человек с правом принять решение"
+            }
+          ];
           while (current.status === "WAITING_CR") {
-            await addTyping("cr", 1800, "координирует CR и субагентов");
-            addMessage("cr", `Создаю CR на доработку, раскладываю критерий на подзадачи и подключаю нужных субагентов/инструменты. По задаче ${current.cr_task_ids[current.cr_task_ids.length - 1]} возвращаю результат Координатору для final-check.`);
+            const attemptNo = current.attempts;
+            const taskId = current.cr_task_ids[current.cr_task_ids.length - 1];
+            const detail = failAttempts[Math.min(attemptNo - 1, failAttempts.length - 1)];
+            const taskLink = crLink(taskId);
+
+            await addTyping("cr", 2200, `готовит CR-итерацию ${attemptNo}`);
+            addMessage("cr", `Беру ${taskLink} в работу. Попытка ${attemptNo}: ${detail.focus}.`);
+
+            await addTyping("cr", 2100, "раскладывает работу между субагентами");
+            addMessage("cr", `${detail.subagents}. Моя задача — не просто закрыть тикет, а довести критерий до результата, который потом подтвердит WARP.`);
+
+            await addTyping("cr", 2100, "собирает результат самопроверки");
+            addMessage("cr", `${detail.result}. Возвращаю Координатору отчёт по ${taskLink} и прошу официальный final-check.`);
+
             current = await completeLatestTask();
-            await addTyping("warp", 1900, "делает official final-check");
+            await addTyping("coordinator", 1700, "запускает обязательную перепроверку");
+            addMessage("coordinator", `Отчёт по ${taskLink} получил. Самостоятельно READY не выставляю: отправляю источник на официальный WARP final-check.`);
+
+            await addTyping("warp", 2300, `проверяет результат попытки ${attemptNo}`);
             if (current.status === "WAITING_CR") {
-              addMessage("warp", "Final-check снова ниже 100%. READY заблокирован, нужна новая CR-итерация.");
-              await addTyping("coordinator", 1300, "проверяет лимит попыток");
-              addMessage("coordinator", `Создаю следующую CR-итерацию: ${current.cr_task_ids[current.cr_task_ids.length - 1]}. Попытка ${current.attempts}; продолжаем только в рамках лимита.`);
+              addMessage("warp", `Попытка ${attemptNo}: готовность всё ещё ниже 100%. READY заблокирован, критерий C5 остаётся проблемным.`);
+              await addTyping("coordinator", 1600, "проверяет лимит попыток");
+              addMessage("coordinator", `Лимит ещё не исчерпан. Создаю следующую CR-итерацию: ${crLink(current.cr_task_ids[current.cr_task_ids.length - 1])}. Это попытка ${current.attempts}; продолжаем аккуратно, с сохранением всего контекста.`);
+            } else {
+              addMessage("warp", `Попытка ${attemptNo}: готовность всё ещё ниже 100%. Автоматические доработки не дали READY.`);
             }
           }
-          await addTyping("coordinator", 1600, "готовит эскалацию человеку");
-          addMessage("coordinator", `Лимит CR-итераций исчерпан. Предзаказ остаётся в статусе ${current.status}; готовлю эскалацию человеку с полной историей по trace.`);
+          await addTyping("coordinator", 1900, "готовит эскалацию человеку");
+          addMessage("coordinator", `Лимит CR-итераций исчерпан. Предзаказ переведён в FAILED. Я не буду переводить его в READY без 100% WARP, поэтому готовлю эскалацию человеку: какие CR запускали, что сделали субагенты и где остался блокер.`);
           state.scenarioFinished = true;
           return;
         }
 
-        await addTyping("cr", 1800, "создаёт CR и координирует субагентов");
-        addMessage("cr", `CR ${order.cr_task_ids[0]} создан. Подтянул инструкции WARP, распределил работу по субагентам и инструментам, self-check прошёл. Возвращаю Координатору отчёт о закрытии критериев.`);
+        await addTyping("cr", 2200, "создаёт CR и распределяет работу");
+        addMessage("cr", `${crLink(order.cr_task_ids[0])} создан. Получил инструкции WARP, разложил C1 и C3.P2 на подзадачи, подключил нужные инструменты и субагентов. Самопроверка показывает, что критерии закрыты.`);
 
         const readyOrder = await completeLatestTask();
-        await addTyping("warp", 1800, "делает official final-check после исправлений");
-        addMessage("warp", "Official final-check: готовность 100%. Критерии закрыты, источник можно официально перевести в READY.");
+        await addTyping("coordinator", 1600, "не принимает результат на слово");
+        addMessage("coordinator", "Отчёт CR Manager принят, но финальное решение не принимается на слово. Запускаю официальный final-check через WARP.");
 
-        await addTyping("ep", 1700, "принимает работу после READY");
-        addMessage("ep", `Получаю ${readyOrder.order_id} уже как заказ после READY. Создаю ЕР-задачу, подбираю параметры реплики и начинаю сборку конфига для Init Loader.`);
+        await addTyping("warp", 2200, "подтверждает результат официальной проверкой");
+        addMessage("warp", "Финальная проверка завершена: все критерии выполнены. Источник готов для создания реплики.");
+
+        await addTyping("coordinator", 1600, "обновляет статус предзаказа");
+        addMessage("coordinator", `Принял результат WARP. Меняю статус предзаказа ${readyOrder.order_id} на READY. После этого передаю работу ЕР-Координатору для создания заказа в ЕР-контуре.`);
+
+        await addTyping("ep", 1900, "принимает заказ после READY");
+        addMessage("ep", "Заказ принят. Создаю ЕР-задачу, подбираю параметры реплики и начинаю сборку конфига для Init Loader.");
         state.scenarioFinished = true;
       } catch (error) {
         addMessage("coordinator", `Ошибка выполнения сценария: ${error.message}`);
@@ -1950,9 +2033,19 @@
 
     function openAgent(agentKey) {
       const detail = agentDetails[agentKey];
+      const labels = detail.profileLabels || {
+        does: "Что умеет",
+        input: "Вход",
+        output: "Выход",
+        boundary: "Граница ответственности"
+      };
       document.getElementById("agentTitle").textContent = detail.title;
       document.getElementById("agentSubtitle").textContent = detail.subtitle;
       document.getElementById("agentPurpose").textContent = detail.purpose;
+      document.getElementById("agentDoesTitle").textContent = labels.does;
+      document.getElementById("agentInputTitle").textContent = labels.input;
+      document.getElementById("agentOutputTitle").textContent = labels.output;
+      document.getElementById("agentBoundaryTitle").textContent = labels.boundary;
       renderList("agentDoes", detail.does);
       renderList("agentDoesNot", detail.doesNot);
       renderList("agentOutput", detail.output);
