@@ -892,6 +892,19 @@
       background: var(--soft);
     }
 
+    .agent-detail-card:first-child {
+      border-left: 6px solid var(--coord);
+      background: #fbfbfa;
+    }
+
+    .agent-detail-card:nth-child(2) {
+      background: #f7f9fb;
+    }
+
+    .agent-detail-card:nth-child(2) ul {
+      padding-left: 0;
+    }
+
     .agent-detail-card h3 {
       margin: 0 0 10px;
       font-size: 18px;
@@ -909,6 +922,17 @@
 
     .agent-detail-card li {
       margin: 8px 0;
+    }
+
+    .agent-detail-card:nth-child(2) li {
+      width: fit-content;
+      max-width: 100%;
+      padding: 6px 9px;
+      margin: 7px 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      list-style: none;
     }
 
     .comparison {
@@ -1063,11 +1087,11 @@
         </button>
         <button class="top-agent" type="button" data-agent="cr">
           <div class="agent-color cr"></div>
-          <div><strong>CR Manager</strong><span>исправляет критерии</span></div>
+          <div><strong>CR Manager</strong><span>ведёт CR и субагентов</span></div>
         </button>
         <button class="top-agent" type="button" data-agent="ep">
           <div class="agent-color ep"></div>
-          <div><strong>ЕР-Конфигуратор</strong><span>стартует после READY</span></div>
+          <div><strong>ЕР-Координатор</strong><span>ведёт заказ после READY</span></div>
         </button>
       </div>
     </header>
@@ -1105,12 +1129,12 @@
             <h2>Групповой чат процесса</h2>
             <p>
               Это демонстрационный интерфейс: сценарий запускается из чата, а ответы агентов появляются с паузами,
-              чтобы было видно, кто с кем общается.
+              чтобы было видно, кто с кем общается и где предзаказ превращается в заказ.
             </p>
           </div>
           <div class="mini-actions">
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-READY">SRC-READY</button>
-            <button class="chip" data-prompt="Хочу загрузить реплику для SRC-123">SRC-123</button>
+            <button class="chip" data-prompt="Хочу оформить предзаказ для CM12345: нужны поля customer_id, balance, updated_at">CM12345</button>
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-FAIL">SRC-FAIL</button>
             <button class="chip" id="showDiagram" type="button">Схема агентов</button>
             <button class="chip" id="showComparison" type="button">Таблица ролей</button>
@@ -1124,7 +1148,7 @@
 
         <form class="composer" id="form">
           <div class="composer-inner">
-            <textarea id="input" rows="1" placeholder="Например: Хочу загрузить реплику для SRC-123"></textarea>
+            <textarea id="input" rows="1" placeholder="Например: Хочу оформить предзаказ для CM12345: нужны поля customer_id, balance, updated_at"></textarea>
             <button class="send" id="send" type="submit">Отправить</button>
           </div>
         </form>
@@ -1170,8 +1194,8 @@
           </div>
 
           <div class="orchestration-node ep-node" data-step="6">
-            <strong>ЕР-Конфигуратор</strong>
-            <span>Начинает фазу создания реплики после READY: подбирает параметры, генерирует конфиг для ЕР и передаёт работу Init Loader.</span>
+            <strong>ЕР-Координатор</strong>
+            <span>Подключается после READY, когда предзаказ становится заказом: подбирает параметры, генерирует конфиг для ЕР и передаёт работу Init Loader.</span>
           </div>
 
           <div class="orchestration-line line-user"></div>
@@ -1197,11 +1221,11 @@
               </div>
               <div class="diagram-agent warp">
                 <strong>WARP</strong>
-                <span>проверяет готовность и возвращает failed criteria</span>
+                <span>проверяет готовность и показывает, какие критерии не закрыты</span>
               </div>
               <div class="diagram-agent cr">
                 <strong>CR Manager</strong>
-                <span>создаёт CR-задачу и выполняет исправления</span>
+                <span>создаёт CR и оркестрирует субагентов для закрытия критериев</span>
               </div>
             </div>
             
@@ -1218,7 +1242,7 @@
             <h3>После READY: создание реплики</h3>
             <div class="diagram-agents">
               <div class="diagram-agent ep">
-                <strong>ЕР-Конфигуратор</strong>
+                <strong>ЕР-Координатор</strong>
                 <span>создаёт заказ в другом Jira-пространстве и генерирует конфиг</span>
               </div>
               <div class="diagram-agent loader">
@@ -1265,20 +1289,24 @@
       </div>
       <div class="agent-detail">
         <div class="agent-detail-card">
-          <h3>Для чего нужен</h3>
+          <h3>Роль</h3>
           <p id="agentPurpose"></p>
         </div>
         <div class="agent-detail-card">
-          <h3>Что делает</h3>
+          <h3>Skills</h3>
           <ul id="agentDoes"></ul>
         </div>
         <div class="agent-detail-card">
-          <h3>Что не делает</h3>
+          <h3>Вход</h3>
           <ul id="agentDoesNot"></ul>
         </div>
         <div class="agent-detail-card">
-          <h3>С чем работает</h3>
-          <ul id="agentWorksWith"></ul>
+          <h3>Выход</h3>
+          <ul id="agentOutput"></ul>
+        </div>
+        <div class="agent-detail-card">
+          <h3>Граница ответственности</h3>
+          <ul id="agentBoundary"></ul>
         </div>
       </div>
     </section>
@@ -1303,7 +1331,7 @@
               <th>Координатор</th>
               <th>WARP</th>
               <th>CR Manager</th>
-              <th>ЕР-Конфигуратор</th>
+              <th>ЕР-Координатор</th>
             </tr>
           </thead>
           <tbody>
@@ -1322,8 +1350,8 @@
               <td>Нет, только готовит валидный вход</td>
               <td>Единственный владелец статуса</td>
               <td>Нет, только вердикт</td>
-              <td>Нет, только callback</td>
-              <td>Нет, работает после READY</td>
+              <td>Нет, только сообщает результат</td>
+              <td>Нет, ведёт заказ после READY</td>
             </tr>
             <tr>
               <td>Кто решает, готов ли источник?</td>
@@ -1340,7 +1368,7 @@
               <td>Нет</td>
               <td>Нет</td>
               <td>Нет, даёт инструкции</td>
-              <td>Да, выполняет remediation</td>
+              <td>Создаёт CR и оркестрирует субагентов</td>
               <td>Нет</td>
             </tr>
             <tr>
@@ -1358,7 +1386,7 @@
               <td>Уточнение запроса, проверка атрибутов, формализация требований</td>
               <td>Объяснение статуса, summary, анализ trace</td>
               <td>Рекомендации по выполнению критериев</td>
-              <td>Планирование remediation и выбор tools</td>
+              <td>Планирование доработок и выбор tools</td>
               <td>Подбор параметров и объяснение конфига</td>
             </tr>
           </tbody>
@@ -1381,150 +1409,183 @@
       coordinator: { label: "Координатор", avatar: "К", cls: "coord" },
       warp: { label: "WARP", avatar: "W", cls: "warp" },
       cr: { label: "CR Manager", avatar: "CR", cls: "cr" },
-      ep: { label: "ЕР-Конфигуратор", avatar: "EP", cls: "ep" }
+      ep: { label: "ЕР-Координатор", avatar: "EP", cls: "ep" }
     };
 
     const agentDetails = {
       user: {
         title: "Пользователь",
         subtitle: "Инициатор предзаказа и получатель объяснений",
-        purpose: "Запускает процесс подготовки источника и задаёт вопросы системе простым языком.",
+        purpose: "Формулирует потребность: какой источник нужен, какие поля требуется получить и зачем нужна будущая реплика.",
         does: [
-          "создаёт предзаказ на загрузку реплики",
-          "может смотреть статус и объяснение процесса",
-          "может участвовать в эскалации как эксперт"
+          "выбирает источник данных",
+          "передаёт КЭ источника, например CM12345",
+          "выбирает атрибуты или поля таблицы для заказа",
+          "задаёт вопросы агентам простым языком"
         ],
         doesNot: [
-          "не меняет системные статусы напрямую",
-          "не выполняет WARP-проверку",
-          "не запускает коннекторы"
+          "source_id или КЭ источника",
+          "список выбранных атрибутов",
+          "цель загрузки реплики",
+          "уточнения по запросу"
         ],
-        worksWith: [
-          "чат-интерфейс",
-          "статус предзаказа",
-          "объяснения Координатора"
+        output: [
+          "создаёт черновик предзаказа",
+          "получает понятный статус процесса",
+          "видит, на каком шаге находится подготовка источника"
+        ],
+        boundary: [
+          "не меняет системные статусы",
+          "не проверяет готовность источника",
+          "не запускает технические действия"
         ]
       },
       req: {
         title: "Агент управления требованиями",
         subtitle: "Входной фильтр и формализатор предзаказа",
-        purpose: "Получает сообщение пользователя, согласует запрос с СДО, проверяет атрибутный состав и только после этого передаёт валидный предзаказ Координатору.",
+        purpose: "Превращает свободный запрос пользователя в валидный предзаказ, который можно безопасно отдать Координатору.",
         does: [
-          "принимает исходный запрос пользователя",
-          "проверяет, достаточно ли данных для предзаказа",
-          "согласует запрос с СДО",
-          "проверяет атрибутный состав источника",
-          "формирует валидный предзаказ для Координатора"
+          "понимает запрос на естественном языке",
+          "проверяет обязательные атрибуты источника",
+          "сверяет запрос с СДО",
+          "выявляет недостающие данные до запуска процесса",
+          "формирует структурированный предзаказ"
         ],
         doesNot: [
-          "не управляет жизненным циклом предзаказа после передачи Координатору",
-          "не проверяет техническую готовность источника вместо WARP",
-          "не создаёт CR-задачи",
-          "не запускает ЕР-конфигурацию"
-        ],
-        worksWith: [
           "сообщение пользователя",
-          "СДО",
-          "атрибутный состав источника",
-          "preorder draft",
-          "Coordinator handoff"
+          "КЭ источника, например CM12345",
+          "выбранные атрибуты",
+          "данные СДО",
+          "правила заполнения заявки"
+        ],
+        output: [
+          "валидный предзаказ для Координатора",
+          "или список уточнений, если данных недостаточно"
+        ],
+        boundary: [
+          "не управляет статусами процесса",
+          "не решает, готов ли источник технически",
+          "отвечает за качество входа перед запуском работы"
         ]
       },
       coordinator: {
         title: "Координатор",
         subtitle: "Владелец жизненного цикла предзаказа",
-        purpose: "Управляет маршрутом предзаказа до READY и передаёт работу следующей фазе после READY.",
+        purpose: "Ведёт предзаказ от момента принятия до решения: можно ли превращать его в заказ или нужна доработка источника.",
         does: [
-          "создаёт предзаказ, order_id и correlation_id",
-          "меняет статус через state machine",
-          "запрашивает WARP initial и final check",
-          "создаёт CR-задачи при NOT_READY",
-          "после READY передаёт задачу ЕР-Конфигуратору"
+          "принимает валидный предзаказ от Агента требований",
+          "присваивает предзаказу ID и сквозной номер отслеживания",
+          "запрашивает у WARP официальную проверку готовности",
+          "если готовность ниже 100%, передаёт работу CR Manager",
+          "следит за попытками доработки и эскалацией",
+          "после READY передаёт заказ ЕР-Координатору"
         ],
         doesNot: [
-          "не чинит источник сам",
-          "не знает как исправлять WARP-критерии",
-          "не дублирует логику готовности WARP",
-          "не позволяет LLM напрямую менять статус"
+          "валидный предзаказ",
+          "ответы WARP",
+          "отчёты CR Manager",
+          "история действий по процессу",
+          "правила перехода между статусами"
         ],
-        worksWith: [
-          "OrderRepositoryPort",
-          "TaskRepositoryPort",
-          "WarpPort",
-          "CrManagerPort",
-          "EpConfiguratorPort / ReplicaInitPort",
-          "TracePort"
+        output: [
+          "READY, если источник подтверждён на 100%",
+          "новая CR-доработка, если источник ещё не готов",
+          "FAILED и эскалация, если лимит попыток исчерпан"
+        ],
+        boundary: [
+          "только Координатор меняет статус предзаказа",
+          "не чинит источник сам",
+          "ИИ может объяснять и предлагать, но не меняет статус напрямую",
+          "ниже 100% WARP всегда блокирует превращение предзаказа в заказ"
         ]
       },
       warp: {
         title: "WARP",
         subtitle: "Авторитетный валидатор готовности источника",
-        purpose: "Даёт единственный официальный ответ: источник готов или нет.",
+        purpose: "Официально измеряет готовность источника. Если готовность не 100%, переход в заказ блокируется и требуется CR-доработка.",
         does: [
           "проверяет источник по критериям готовности",
-          "возвращает READY или NOT_READY",
-          "возвращает score и failed criteria",
-          "даёт remediation-инструкции для CR Manager"
+          "возвращает READY только при 100%",
+          "показывает, какие критерии не выполнены",
+          "даёт инструкции по доведению критериев до 100%",
+          "подтверждает результат после доработки"
         ],
         doesNot: [
-          "не меняет источник",
-          "не создаёт Jira-задачи",
-          "не меняет статус предзаказа",
-          "не запускает реплику"
+          "КЭ источника",
+          "метаданные источника",
+          "атрибутный состав",
+          "критерии готовности",
+          "контекст проверки"
         ],
-        worksWith: [
-          "readiness criteria",
-          "source metadata",
-          "remediation catalog",
-          "audit hash"
+        output: [
+          "READY, если источник готов на 100%",
+          "NOT_READY со списком проблемных критериев",
+          "инструкции для доработки источника"
+        ],
+        boundary: [
+          "не чинит источник и не создаёт CR",
+          "не меняет статус предзаказа",
+          "является единственным источником правды по готовности"
         ]
       },
       cr: {
         title: "CR Manager",
-        subtitle: "Исполнитель исправлений источника",
-        purpose: "Получает failed criteria и превращает remediation-инструкции в действия.",
+        subtitle: "Оркестратор CR-доработок и субагентов",
+        purpose: "Получает от Координатора список блокирующих критериев, создаёт CR на доработку и координирует инструменты или субагентов, которые доводят источник до 100%.",
         does: [
-          "создаёт или обновляет Jira-задачу",
-          "запрашивает remediation у WARP",
-          "выбирает и вызывает коннекторы",
+          "создаёт CR на доработку источника",
+          "запрашивает инструкции по доработке у WARP",
+          "раскладывает проблемы на понятные подзадачи",
+          "оркестрирует субагентов и инструменты",
+          "координирует планы загрузок A и A+",
           "делает self-check через WARP",
           "сообщает Координатору результат"
         ],
         doesNot: [
-          "не выставляет READY",
-          "не принимает финальное решение о готовности",
-          "не обходит WARP",
-          "не владеет общим статусом предзаказа"
+          "список проблемных критериев от Координатора",
+          "инструкции WARP по доработке",
+          "Jira CR",
+          "коннекторы и субагенты",
+          "результаты самопроверки"
         ],
-        worksWith: [
-          "JiraPort",
-          "WarpPort",
-          "ConnectorRegistry",
-          "CoordinatorCallbackPort",
-          "TracePort"
+        output: [
+          "CR на доработку источника",
+          "отчёт о выполненной доработке",
+          "результат самопроверки через WARP"
+        ],
+        boundary: [
+          "не выставляет READY сам",
+          "не принимает финальное решение за WARP",
+          "не владеет общим статусом предзаказа"
         ]
       },
       ep: {
-        title: "ЕР-Конфигуратор",
-        subtitle: "Первый агент после READY",
-        purpose: "Начинает фазу создания реплики после того, как источник официально подтверждён.",
+        title: "ЕР-Координатор",
+        subtitle: "Первый агент после превращения предзаказа в заказ",
+        purpose: "Включается только после 100% READY: предзаказ становится заказом, и начинается контур создания реплики.",
         does: [
           "создаёт заказ в другом Jira-пространстве",
           "подбирает параметры реплики",
           "генерирует конфиг для ЕР",
-          "передаёт работу Init Loader"
+          "передаёт работу Init Loader",
+          "ведёт заказ после READY"
         ],
         doesNot: [
-          "не проверяет готовность источника",
-          "не исправляет failed criteria до READY",
-          "не меняет статус предзаказа до READY"
-        ],
-        worksWith: [
-          "READY-предзаказ",
-          "Jira-пространство DRMCAP",
+          "READY-заказ от Координатора",
+          "атрибутный состав заказа",
           "параметры реплики",
-          "ЕР-конфиг",
-          "LoaderPort"
+          "правила ЕР-конфигурации",
+          "Jira-пространство ЕР"
+        ],
+        output: [
+          "заказ в ЕР-контуре",
+          "подобранные параметры реплики",
+          "готовый конфиг для дальнейшей загрузки"
+        ],
+        boundary: [
+          "не участвует до READY",
+          "не исправляет WARP-критерии",
+          "не превращает источник в READY"
         ]
       }
     };
@@ -1532,10 +1593,10 @@
     const railSteps = [
       ["CREATED", "предзаказ принят"],
       ["VALIDATING", "WARP проверяет источник"],
-      ["WAITING_CR", "CR Manager исправляет"],
+      ["WAITING_CR", "CR Manager ведёт CR"],
       ["FINAL_CHECK", "официальная проверка"],
       ["READY", "источник подтверждён"],
-      ["EP_TASK_CREATED", "задача ЕР-Конфигуратору"],
+      ["EP_TASK_CREATED", "задача ЕР-Координатору"],
       ["CONFIGURING", "подбор параметров"],
       ["LOADING", "загрузка данных"],
       ["PUBLISHED", "реплика опубликована"]
@@ -1670,6 +1731,8 @@
       if (upper.includes("SRC-READY") || upper.includes("READY")) return "SRC-READY";
       if (upper.includes("SRC-FAIL") || upper.includes("FAILED") || upper.includes("FAIL")) return "SRC-FAIL";
       if (upper.includes("SRC-123") || upper.includes("CR")) return "SRC-123";
+      const cmMatch = upper.match(/CM\d{3,}/);
+      if (cmMatch) return cmMatch[0];
       return null;
     }
 
@@ -1706,65 +1769,65 @@
       setBusy(true);
       try {
         await addTyping("req", 1600, "проверяет запрос и обязательные атрибуты");
-        addMessage("req", `Запрос получен. Проверяю, что для источника ${sourceId} достаточно атрибутов и что предзаказ можно согласовать с СДО.`);
+        addMessage("req", `Вижу запрос на предзаказ по источнику ${sourceId}. Проверяю КЭ источника, выбранные атрибуты и то, можно ли отправлять этот набор на согласование в СДО.`);
 
         await addTyping("req", 1500, "согласует предзаказ с СДО");
-        addMessage("req", "СДО-согласование и атрибутная проверка пройдены. Передаю валидный предзаказ Координатору.");
+        addMessage("req", "Атрибутный состав выглядит корректно, СДО подтвердил возможность такого предзаказа. Передаю Координатору уже не свободный текст, а проверенную заявку.");
 
         await addTyping("coordinator", 1700, "разбирает запрос пользователя");
-        addMessage("coordinator", `Принял запрос. Создаю предзаказ для источника ${sourceId} и присваиваю correlation_id.`);
+        addMessage("coordinator", `Принял валидный предзаказ от Агента требований. Создаю процесс для ${sourceId}, фиксирую preorder_id и correlation_id, дальше проверяю источник через WARP.`);
 
         await wait(650);
         const order = await createOrder(sourceId);
 
         await addTyping("coordinator", 1400, "фиксирует предзаказ и текущий статус");
-        addMessage("coordinator", `Предзаказ создан: ${order.order_id}. Текущий статус: ${order.status}.`);
+        addMessage("coordinator", `Предзаказ зарегистрирован: ${order.order_id}. Сейчас это ещё не заказ, текущий статус: ${order.status}.`);
 
         if (sourceId === "SRC-READY") {
           await addTyping("warp", 1900, "проверяет критерии готовности источника");
-          addMessage("warp", "Проверка источника завершена. Источник соответствует критериям, статус READY.");
+          addMessage("warp", "Проверка завершена: готовность 100%. Блокирующих критериев нет, источник можно переводить в READY.");
           await addTyping("ep", 1700, "готовит старт работ после READY");
-          addMessage("ep", "Получаю задачу после READY. Следующий шаг: создать заказ в Jira-пространстве DRMCAP и начать подбор параметров реплики.");
+          addMessage("ep", "Получаю уже READY-заказ. Начинаю пост-READY контур: создаю заказ в ЕР-пространстве, подбираю параметры реплики и готовлю конфиг.");
           state.scenarioFinished = true;
           return;
         }
 
         await addTyping("warp", 2000, "сравнивает источник с критериями WARP");
         addMessage("warp", sourceId === "SRC-FAIL"
-          ? "Источник не готов. Обнаружена проблема C5, возможна регрессия."
-          : "Источник не готов. Не выполнены критерии C1 и C3.P2.");
+          ? "Готовность ниже 100%: критерий C5 не закрыт, вижу признак регрессии. Для перехода в заказ это блокер."
+          : "Готовность ниже 100%: не закрыты C1 и C3.P2. Это блокирует READY, нужен CR-контур доработки источника.");
 
         await addTyping("coordinator", 1500, "выбирает маршрут для исправлений");
-        addMessage("coordinator", `Перевожу предзаказ в WAITING_CR и отправляю CR-задачу: ${order.cr_task_ids[0]}.`);
+        addMessage("coordinator", `Фиксирую WAITING_CR. Предзаказ не может стать заказом, пока WARP не даст 100%. Передаю CR Manager задачу ${order.cr_task_ids[0]} и список блокирующих критериев.`);
 
         if (sourceId === "SRC-FAIL") {
           let current = order;
           while (current.status === "WAITING_CR") {
-            await addTyping("cr", 1800, "пытается применить remediation-инструкции");
-            addMessage("cr", `Пытаюсь исправить критерии. Закрываю задачу ${current.cr_task_ids[current.cr_task_ids.length - 1]} и прошу Координатора сделать final-check.`);
+            await addTyping("cr", 1800, "координирует CR и субагентов");
+            addMessage("cr", `Создаю CR на доработку, раскладываю критерий на подзадачи и подключаю нужных субагентов/инструменты. По задаче ${current.cr_task_ids[current.cr_task_ids.length - 1]} возвращаю результат Координатору для final-check.`);
             current = await completeLatestTask();
             await addTyping("warp", 1900, "делает official final-check");
             if (current.status === "WAITING_CR") {
-              addMessage("warp", "Final-check снова вернул NOT_READY. Требуется повторная CR-задача.");
+              addMessage("warp", "Final-check снова ниже 100%. READY заблокирован, нужна новая CR-итерация.");
               await addTyping("coordinator", 1300, "проверяет лимит попыток");
-              addMessage("coordinator", `Создал следующую CR-задачу: ${current.cr_task_ids[current.cr_task_ids.length - 1]}. Попытка ${current.attempts}.`);
+              addMessage("coordinator", `Создаю следующую CR-итерацию: ${current.cr_task_ids[current.cr_task_ids.length - 1]}. Попытка ${current.attempts}; продолжаем только в рамках лимита.`);
             }
           }
           await addTyping("coordinator", 1600, "готовит эскалацию человеку");
-          addMessage("coordinator", `Лимит попыток исчерпан. Итоговый статус предзаказа: ${current.status}. Нужна эскалация человеку с trace-контекстом.`);
+          addMessage("coordinator", `Лимит CR-итераций исчерпан. Предзаказ остаётся в статусе ${current.status}; готовлю эскалацию человеку с полной историей по trace.`);
           state.scenarioFinished = true;
           return;
         }
 
-        await addTyping("cr", 1800, "выполняет исправления и self-check");
-        addMessage("cr", `CR-задача ${order.cr_task_ids[0]} выполнена. Self-check прошёл, сообщаю Координатору.`);
+        await addTyping("cr", 1800, "создаёт CR и координирует субагентов");
+        addMessage("cr", `CR ${order.cr_task_ids[0]} создан. Подтянул инструкции WARP, распределил работу по субагентам и инструментам, self-check прошёл. Возвращаю Координатору отчёт о закрытии критериев.`);
 
         const readyOrder = await completeLatestTask();
         await addTyping("warp", 1800, "делает official final-check после исправлений");
-        addMessage("warp", "Official final-check завершён. Источник готов, возвращаю READY.");
+        addMessage("warp", "Official final-check: готовность 100%. Критерии закрыты, источник можно официально перевести в READY.");
 
         await addTyping("ep", 1700, "принимает работу после READY");
-        addMessage("ep", `Получаю предзаказ ${readyOrder.order_id} после READY. Начинаю подготовку заказа в Jira ЕР и генерацию конфига.`);
+        addMessage("ep", `Получаю ${readyOrder.order_id} уже как заказ после READY. Создаю ЕР-задачу, подбираю параметры реплики и начинаю сборку конфига для Init Loader.`);
         state.scenarioFinished = true;
       } catch (error) {
         addMessage("coordinator", `Ошибка выполнения сценария: ${error.message}`);
@@ -1776,13 +1839,13 @@
     function answerQuestion(text) {
       const lower = text.toLowerCase();
       if (!state.order) {
-        return "Пока нет активного предзаказа. Напиши, например: «Хочу загрузить реплику для SRC-123».";
+        return "Пока нет активного предзаказа. Напиши, например: «Хочу оформить предзаказ для CM12345: нужны поля customer_id, balance, updated_at».";
       }
       if (lower.includes("статус")) {
         return `Сейчас предзаказ ${state.order.order_id} находится в статусе ${state.order.status}. Источник: ${state.order.source_id}.`;
       }
       if (lower.includes("ready")) {
-        return "READY — это рубеж: WARP официально подтвердил источник. После READY Координатор передаёт задачу ЕР-Конфигуратору.";
+        return "READY — это рубеж 100% готовности по WARP. До READY мы работаем с предзаказом; после READY Координатор превращает его в заказ и передаёт ЕР-Координатору.";
       }
       if (lower.includes("trace") || lower.includes("лог")) {
         return `Trace доступен по correlation_id ${state.order.correlation_id}. Сейчас собрано ${state.trace.length} событий.`;
@@ -1816,7 +1879,7 @@
       updateOrder(null);
       els.messages.innerHTML = "";
       if (withGreeting) {
-        addMessage("coordinator", "Начали новый диалог. Напиши: «Хочу загрузить реплику для SRC-123», и я покажу общение агентов.");
+        addMessage("coordinator", "Начали новый диалог. Напиши: «Хочу оформить предзаказ для CM12345: нужны поля customer_id, balance, updated_at», и я покажу общение агентов.");
       }
     }
 
@@ -1892,7 +1955,8 @@
       document.getElementById("agentPurpose").textContent = detail.purpose;
       renderList("agentDoes", detail.does);
       renderList("agentDoesNot", detail.doesNot);
-      renderList("agentWorksWith", detail.worksWith);
+      renderList("agentOutput", detail.output);
+      renderList("agentBoundary", detail.boundary);
       openModal(agentModal);
     }
 
@@ -1915,7 +1979,7 @@
     });
 
     renderRail("IDLE", false);
-    addMessage("coordinator", "Я готов. Напиши: «Хочу загрузить реплику для SRC-123», и я покажу, как агенты начнут общаться между собой.");
+    addMessage("coordinator", "Я готов. Напиши: «Хочу оформить предзаказ для CM12345: нужны поля customer_id, balance, updated_at», и я покажу, как агенты начнут общаться между собой.");
   </script>
 </body>
 </html>
