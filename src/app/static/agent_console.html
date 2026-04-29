@@ -94,6 +94,14 @@
       border: 1px solid var(--line);
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.74);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .top-agent:hover {
+      border-color: var(--line-strong);
+      background: #ffffff;
     }
 
     .agent-color {
@@ -694,6 +702,71 @@
       line-height: 1.25;
     }
 
+    .agent-detail {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 16px;
+    }
+
+    .agent-detail-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .agent-detail-card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .agent-detail-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .agent-detail-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .agent-detail-card li {
+      margin: 8px 0;
+    }
+
+    .comparison {
+      padding: 20px;
+      overflow: auto;
+    }
+
+    .comparison table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+      font-size: 13px;
+    }
+
+    .comparison th,
+    .comparison td {
+      padding: 11px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .comparison th {
+      background: var(--soft);
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .comparison td:first-child {
+      font-weight: 800;
+      color: var(--ink);
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -756,7 +829,8 @@
       .diagram-timeline,
       .diagram-agents,
       .diagram-timeline-side,
-      .diagram-timeline-side.after-ready {
+      .diagram-timeline-side.after-ready,
+      .agent-detail {
         grid-template-columns: 1fr;
       }
     }
@@ -770,26 +844,26 @@
         <span>Agent Room</span>
       </div>
       <div class="topbar-roster" aria-label="Кто находится в комнате агентов">
-        <div class="top-agent">
+        <button class="top-agent" type="button" data-agent="user">
           <div class="agent-color user"></div>
           <div><strong>Пользователь</strong><span>создаёт предзаказ и задаёт вопросы</span></div>
-        </div>
-        <div class="top-agent">
+        </button>
+        <button class="top-agent" type="button" data-agent="coordinator">
           <div class="agent-color coord"></div>
           <div><strong>Координатор</strong><span>ведёт статус и маршрут</span></div>
-        </div>
-        <div class="top-agent">
+        </button>
+        <button class="top-agent" type="button" data-agent="warp">
           <div class="agent-color warp"></div>
           <div><strong>WARP</strong><span>проверяет готовность</span></div>
-        </div>
-        <div class="top-agent">
+        </button>
+        <button class="top-agent" type="button" data-agent="cr">
           <div class="agent-color cr"></div>
           <div><strong>CR Manager</strong><span>исправляет критерии</span></div>
-        </div>
-        <div class="top-agent">
+        </button>
+        <button class="top-agent" type="button" data-agent="ep">
           <div class="agent-color ep"></div>
           <div><strong>ЕР-Конфигуратор</strong><span>стартует после READY</span></div>
-        </div>
+        </button>
       </div>
     </header>
 
@@ -834,6 +908,7 @@
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-123">SRC-123</button>
             <button class="chip" data-prompt="Хочу загрузить реплику для SRC-FAIL">SRC-FAIL</button>
             <button class="chip" id="showDiagram" type="button">Схема агентов</button>
+            <button class="chip" id="showComparison" type="button">Таблица ролей</button>
             <button class="chip" id="newDialog" type="button">Новый диалог</button>
           </div>
         </div>
@@ -942,6 +1017,112 @@
     </section>
   </div>
 
+  <div class="modal-backdrop" id="agentModal" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="agentTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="agentTitle">Агент</h2>
+          <p id="agentSubtitle">Роль агента в процессе</p>
+        </div>
+        <button class="close" id="closeAgent" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="agent-detail">
+        <div class="agent-detail-card">
+          <h3>Для чего нужен</h3>
+          <p id="agentPurpose"></p>
+        </div>
+        <div class="agent-detail-card">
+          <h3>Что делает</h3>
+          <ul id="agentDoes"></ul>
+        </div>
+        <div class="agent-detail-card">
+          <h3>Что не делает</h3>
+          <ul id="agentDoesNot"></ul>
+        </div>
+        <div class="agent-detail-card">
+          <h3>С чем работает</h3>
+          <ul id="agentWorksWith"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="comparisonModal" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="comparisonTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="comparisonTitle">Сравнительная таблица агентов</h2>
+          <p>Кто за что отвечает и где проходит граница ответственности.</p>
+        </div>
+        <button class="close" id="closeComparison" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="comparison">
+        <table>
+          <thead>
+            <tr>
+              <th>Вопрос</th>
+              <th>Пользователь</th>
+              <th>Координатор</th>
+              <th>WARP</th>
+              <th>CR Manager</th>
+              <th>ЕР-Конфигуратор</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Кто создаёт предзаказ?</td>
+              <td>Инициирует запрос</td>
+              <td>Создаёт запись и ID</td>
+              <td>Нет</td>
+              <td>Нет</td>
+              <td>Нет</td>
+            </tr>
+            <tr>
+              <td>Кто меняет статус предзаказа?</td>
+              <td>Нет</td>
+              <td>Единственный владелец статуса</td>
+              <td>Нет, только вердикт</td>
+              <td>Нет, только callback</td>
+              <td>Нет, работает после READY</td>
+            </tr>
+            <tr>
+              <td>Кто решает, готов ли источник?</td>
+              <td>Нет</td>
+              <td>Запрашивает проверку</td>
+              <td>Единственный authority</td>
+              <td>Только self-check через WARP</td>
+              <td>Не участвует до READY</td>
+            </tr>
+            <tr>
+              <td>Кто чинит источник?</td>
+              <td>Может помогать экспертизой</td>
+              <td>Нет</td>
+              <td>Нет, даёт инструкции</td>
+              <td>Да, выполняет remediation</td>
+              <td>Нет</td>
+            </tr>
+            <tr>
+              <td>Кто стартует работу после READY?</td>
+              <td>Нет</td>
+              <td>Передаёт задачу дальше</td>
+              <td>Нет</td>
+              <td>Нет</td>
+              <td>Да, создаёт заказ ЕР и готовит конфиг</td>
+            </tr>
+            <tr>
+              <td>Где полезен LLM?</td>
+              <td>Формулирует запрос</td>
+              <td>Объяснение статуса, summary, анализ trace</td>
+              <td> Для предоставления рекомендаций, по выполнению критериев</td>
+              <td>Планирование remediation и выбор tools</td>
+              <td>Подбор параметров и объяснение конфига</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
   <script>
     const state = {
       order: null,
@@ -956,6 +1137,126 @@
       warp: { label: "WARP", avatar: "W", cls: "warp" },
       cr: { label: "CR Manager", avatar: "CR", cls: "cr" },
       ep: { label: "ЕР-Конфигуратор", avatar: "EP", cls: "ep" }
+    };
+
+    const agentDetails = {
+      user: {
+        title: "Пользователь",
+        subtitle: "Инициатор предзаказа и получатель объяснений",
+        purpose: "Запускает процесс подготовки источника и задаёт вопросы системе простым языком.",
+        does: [
+          "создаёт предзаказ на загрузку реплики",
+          "может смотреть статус и объяснение процесса",
+          "может участвовать в эскалации как эксперт"
+        ],
+        doesNot: [
+          "не меняет системные статусы напрямую",
+          "не выполняет WARP-проверку",
+          "не запускает коннекторы"
+        ],
+        worksWith: [
+          "чат-интерфейс",
+          "статус предзаказа",
+          "объяснения Координатора"
+        ]
+      },
+      coordinator: {
+        title: "Координатор",
+        subtitle: "Владелец жизненного цикла предзаказа",
+        purpose: "Управляет маршрутом предзаказа до READY и передаёт работу следующей фазе после READY.",
+        does: [
+          "создаёт предзаказ, order_id и correlation_id",
+          "меняет статус через state machine",
+          "запрашивает WARP initial и final check",
+          "создаёт CR-задачи при NOT_READY",
+          "после READY передаёт задачу ЕР-Конфигуратору"
+        ],
+        doesNot: [
+          "не чинит источник сам",
+          "не знает как исправлять WARP-критерии",
+          "не дублирует логику готовности WARP",
+          "не позволяет LLM напрямую менять статус"
+        ],
+        worksWith: [
+          "OrderRepositoryPort",
+          "TaskRepositoryPort",
+          "WarpPort",
+          "CrManagerPort",
+          "EpConfiguratorPort / ReplicaInitPort",
+          "TracePort"
+        ]
+      },
+      warp: {
+        title: "WARP",
+        subtitle: "Авторитетный валидатор готовности источника",
+        purpose: "Даёт единственный официальный ответ: источник готов или нет.",
+        does: [
+          "проверяет источник по критериям готовности",
+          "возвращает READY или NOT_READY",
+          "возвращает score и failed criteria",
+          "даёт remediation-инструкции для CR Manager"
+        ],
+        doesNot: [
+          "не меняет источник",
+          "не создаёт Jira-задачи",
+          "не меняет статус предзаказа",
+          "не запускает реплику"
+        ],
+        worksWith: [
+          "readiness criteria",
+          "source metadata",
+          "remediation catalog",
+          "audit hash"
+        ]
+      },
+      cr: {
+        title: "CR Manager",
+        subtitle: "Исполнитель исправлений источника",
+        purpose: "Получает failed criteria и превращает remediation-инструкции в действия.",
+        does: [
+          "создаёт или обновляет Jira-задачу",
+          "запрашивает remediation у WARP",
+          "выбирает и вызывает коннекторы",
+          "делает self-check через WARP",
+          "сообщает Координатору результат"
+        ],
+        doesNot: [
+          "не выставляет READY",
+          "не принимает финальное решение о готовности",
+          "не обходит WARP",
+          "не владеет общим статусом предзаказа"
+        ],
+        worksWith: [
+          "JiraPort",
+          "WarpPort",
+          "ConnectorRegistry",
+          "CoordinatorCallbackPort",
+          "TracePort"
+        ]
+      },
+      ep: {
+        title: "ЕР-Конфигуратор",
+        subtitle: "Первый агент после READY",
+        purpose: "Начинает фазу создания реплики после того, как источник официально подтверждён.",
+        does: [
+          "создаёт заказ в другом Jira-пространстве",
+          "подбирает параметры реплики",
+          "генерирует конфиг для ЕР",
+          "передаёт работу Init Loader"
+        ],
+        doesNot: [
+          "не проверяет готовность источника",
+          "не исправляет failed criteria до READY",
+          "не меняет статус предзаказа до READY"
+        ],
+        worksWith: [
+          "READY-предзаказ",
+          "Jira-пространство DRMCAP",
+          "параметры реплики",
+          "ЕР-конфиг",
+          "LoaderPort"
+        ]
+      }
     };
 
     const railSteps = [
@@ -1147,7 +1448,7 @@
           await addTyping("warp", 1900, "проверяет критерии готовности источника");
           addMessage("warp", "Проверка источника завершена. Источник соответствует критериям, статус READY.");
           await addTyping("ep", 1700, "готовит старт работ после READY");
-          addMessage("ep", "Получаю задачу после READY. Следующий шаг: создать заказ в Jira-пространстве ЕР и начать подбор параметров реплики.");
+          addMessage("ep", "Получаю задачу после READY. Следующий шаг: создать заказ в Jira-пространстве DRMCAP и начать подбор параметров реплики.");
           state.scenarioFinished = true;
           return;
         }
@@ -1269,24 +1570,71 @@
     });
 
     const modal = document.getElementById("diagramModal");
+    const comparisonModal = document.getElementById("comparisonModal");
+    const agentModal = document.getElementById("agentModal");
+
+    function openModal(target) {
+      target.classList.add("open");
+      target.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(target) {
+      target.classList.remove("open");
+      target.setAttribute("aria-hidden", "true");
+    }
+
     document.getElementById("showDiagram").addEventListener("click", () => {
-      modal.classList.add("open");
-      modal.setAttribute("aria-hidden", "false");
+      openModal(modal);
     });
     document.getElementById("closeDiagram").addEventListener("click", () => {
-      modal.classList.remove("open");
-      modal.setAttribute("aria-hidden", "true");
+      closeModal(modal);
     });
-    modal.addEventListener("click", (event) => {
-      if (event.target === modal) {
-        modal.classList.remove("open");
-        modal.setAttribute("aria-hidden", "true");
-      }
+    document.getElementById("showComparison").addEventListener("click", () => {
+      openModal(comparisonModal);
     });
+    document.getElementById("closeComparison").addEventListener("click", () => {
+      closeModal(comparisonModal);
+    });
+    document.getElementById("closeAgent").addEventListener("click", () => {
+      closeModal(agentModal);
+    });
+
+    function renderList(id, items) {
+      const list = document.getElementById(id);
+      list.innerHTML = "";
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        list.appendChild(li);
+      });
+    }
+
+    function openAgent(agentKey) {
+      const detail = agentDetails[agentKey];
+      document.getElementById("agentTitle").textContent = detail.title;
+      document.getElementById("agentSubtitle").textContent = detail.subtitle;
+      document.getElementById("agentPurpose").textContent = detail.purpose;
+      renderList("agentDoes", detail.does);
+      renderList("agentDoesNot", detail.doesNot);
+      renderList("agentWorksWith", detail.worksWith);
+      openModal(agentModal);
+    }
+
+    document.querySelectorAll("[data-agent]").forEach((button) => {
+      button.addEventListener("click", () => openAgent(button.dataset.agent));
+    });
+
+    [modal, comparisonModal, agentModal].forEach((target) => {
+      target.addEventListener("click", (event) => {
+        if (event.target === target) closeModal(target);
+      });
+    });
+
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        modal.classList.remove("open");
-        modal.setAttribute("aria-hidden", "true");
+        closeModal(modal);
+        closeModal(comparisonModal);
+        closeModal(agentModal);
       }
     });
 
