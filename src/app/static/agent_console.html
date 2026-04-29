@@ -64,6 +64,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex: 0 0 auto;
       font-weight: 760;
     }
 
@@ -82,7 +83,9 @@
       display: grid;
       grid-template-columns: repeat(6, minmax(106px, 1fr));
       gap: 8px;
-      width: min(860px, 72vw);
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
     }
 
     .top-agent {
@@ -134,11 +137,11 @@
     }
 
     .layout {
-      width: min(1280px, calc(100% - 28px));
+      width: calc(100% - 28px);
       margin: 0 auto;
       padding: 18px 0;
       display: grid;
-      grid-template-columns: 320px minmax(0, 1fr);
+      grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
       gap: 16px;
       min-height: calc(100vh - 78px);
     }
@@ -366,8 +369,9 @@
     .messages {
       display: grid;
       gap: 14px;
-      max-width: 850px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: none;
+      margin: 0;
     }
 
     .message {
@@ -445,8 +449,9 @@
     }
 
     .composer-inner {
-      max-width: 850px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: none;
+      margin: 0;
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 10px;
