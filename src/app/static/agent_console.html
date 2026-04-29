@@ -16,6 +16,7 @@
       --line-strong: #c9c9c4;
       --black: #111111;
       --coord: #315f9f;
+      --req: #6f4bb1;
       --warp: #167466;
       --cr: #9a582b;
       --ep: #806b13;
@@ -79,7 +80,7 @@
 
     .topbar-roster {
       display: grid;
-      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      grid-template-columns: repeat(6, minmax(106px, 1fr));
       gap: 8px;
       width: min(860px, 72vw);
     }
@@ -113,6 +114,7 @@
     }
 
     .agent-color.user { background: var(--user); }
+    .agent-color.req { background: var(--req); }
     .agent-color.coord { background: var(--coord); }
     .agent-color.warp { background: var(--warp); }
     .agent-color.cr { background: var(--cr); }
@@ -216,6 +218,7 @@
     }
 
     .avatar.user { background: var(--user); }
+    .avatar.req { background: var(--req); }
     .avatar.coord { background: var(--coord); }
     .avatar.warp { background: var(--warp); }
     .avatar.cr { background: var(--cr); }
@@ -552,7 +555,7 @@
 
     .orchestration-map {
       position: relative;
-      min-height: 520px;
+      min-height: 680px;
       border: 1px solid var(--line);
       border-radius: 16px;
       background:
@@ -565,9 +568,9 @@
 
     .orchestration-node {
       position: absolute;
-      width: 190px;
-      min-height: 112px;
-      padding: 14px;
+      width: 218px;
+      min-height: 138px;
+      padding: 16px 14px 14px;
       border: 1px solid var(--line);
       border-top: 6px solid var(--coord);
       border-radius: 14px;
@@ -576,9 +579,25 @@
       z-index: 2;
     }
 
+    .orchestration-node::before {
+      content: attr(data-step);
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #f0f2f4;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .orchestration-node.center {
-      left: calc(50% - 105px);
-      top: calc(50% - 62px);
+      left: calc(50% + 5px);
+      top: 270px;
       width: 210px;
       min-height: 124px;
       border-color: #b8c8e3;
@@ -587,26 +606,32 @@
     }
 
     .orchestration-node.user-node {
-      left: 34px;
-      top: 36px;
+      left: 42px;
+      top: 270px;
       border-top-color: var(--user);
     }
 
+    .orchestration-node.req-node {
+      left: 292px;
+      top: 270px;
+      border-top-color: var(--req);
+    }
+
     .orchestration-node.warp-node {
-      right: 34px;
-      top: 36px;
+      right: 42px;
+      top: 34px;
       border-top-color: var(--warp);
     }
 
     .orchestration-node.cr-node {
-      left: 34px;
-      bottom: 36px;
+      right: 42px;
+      top: 260px;
       border-top-color: var(--cr);
     }
 
     .orchestration-node.ep-node {
-      right: 34px;
-      bottom: 36px;
+      right: 42px;
+      bottom: 34px;
       border-top-color: var(--ep);
     }
 
@@ -644,50 +669,39 @@
     }
 
     .line-user {
-      left: 215px;
-      top: 102px;
-      width: calc(50% - 305px);
-      transform: rotate(25deg);
+      left: 260px;
+      top: 340px;
+      width: 34px;
+      transform: rotate(0deg);
+    }
+
+    .line-req {
+      left: 510px;
+      top: 340px;
+      width: calc(50% - 505px);
+      transform: rotate(0deg);
     }
 
     .line-warp {
-      left: calc(50% + 106px);
-      top: 232px;
-      width: calc(50% - 322px);
-      transform: rotate(-28deg);
+      left: calc(50% + 215px);
+      top: 302px;
+      width: 116px;
+      transform: rotate(-38deg);
     }
 
     .line-cr {
-      left: 220px;
-      bottom: 116px;
-      width: calc(50% - 308px);
-      transform: rotate(-24deg);
+      left: calc(50% + 215px);
+      top: 340px;
+      width: calc(50% - 365px);
+      transform: rotate(0deg);
     }
 
     .line-ep {
-      left: calc(50% + 106px);
-      bottom: 236px;
-      width: calc(50% - 322px);
-      transform: rotate(27deg);
+      left: calc(50% + 215px);
+      top: 378px;
+      width: 116px;
+      transform: rotate(38deg);
     }
-
-    .flow-label {
-      position: absolute;
-      max-width: 180px;
-      padding: 7px 9px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #3f464d;
-      font-size: 12px;
-      line-height: 1.25;
-      z-index: 3;
-    }
-
-    .label-user { left: 236px; top: 86px; }
-    .label-warp { right: 238px; top: 102px; }
-    .label-cr { left: 226px; bottom: 92px; }
-    .label-ep { right: 226px; bottom: 92px; }
 
     .orchestration-caption {
       position: absolute;
@@ -727,7 +741,7 @@
 
     .diagram-agents {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
       margin-bottom: 14px;
     }
@@ -741,6 +755,7 @@
       background: var(--panel);
     }
 
+    .diagram-agent.req { border-top-color: var(--req); }
     .diagram-agent.warp { border-top-color: var(--warp); }
     .diagram-agent.cr { border-top-color: var(--cr); }
     .diagram-agent.ep { border-top-color: var(--ep); }
@@ -899,7 +914,7 @@
     .comparison table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 860px;
+      min-width: 1040px;
       font-size: 13px;
     }
 
@@ -1000,6 +1015,7 @@
       .orchestration-node,
       .orchestration-node.center,
       .orchestration-node.user-node,
+      .orchestration-node.req-node,
       .orchestration-node.warp-node,
       .orchestration-node.cr-node,
       .orchestration-node.ep-node,
@@ -1010,8 +1026,7 @@
         transform: none;
       }
 
-      .orchestration-line,
-      .flow-label {
+      .orchestration-line {
         display: none;
       }
     }
@@ -1028,6 +1043,10 @@
         <button class="top-agent" type="button" data-agent="user">
           <div class="agent-color user"></div>
           <div><strong>Пользователь</strong><span>создаёт предзаказ и задаёт вопросы</span></div>
+        </button>
+        <button class="top-agent" type="button" data-agent="req">
+          <div class="agent-color req"></div>
+          <div><strong>Агент требований</strong><span>проверяет запрос и СДО</span></div>
         </button>
         <button class="top-agent" type="button" data-agent="coordinator">
           <div class="agent-color coord"></div>
@@ -1120,40 +1139,41 @@
 
       <div class="diagram">
         <div class="orchestration-map" aria-label="Координатор в центре оркестрации">
-          <div class="orchestration-node center">
+          <div class="orchestration-node center" data-step="3">
             <strong>Координатор</strong>
-            <span>Центр оркестрации: принимает предзаказ, держит статус, вызывает агентов и решает следующий шаг по правилам процесса.</span>
+            <span>Центр оркестрации. Управляет жизненным циклом предзаказа, держит статус и направляет задачи между агентами.</span>
           </div>
 
-          <div class="orchestration-node user-node">
+          <div class="orchestration-node user-node" data-step="1">
             <strong>Пользователь</strong>
-            <span>Создаёт предзаказ и видит объяснение процесса в чате.</span>
+            <span>Инициатор предзаказа. Запускает процесс подготовки источника и задаёт вопросы агентам простым языком.</span>
           </div>
 
-          <div class="orchestration-node warp-node">
+          <div class="orchestration-node req-node" data-step="2">
+            <strong>Агент управления требованиями</strong>
+            <span>Принимает запрос пользователя, согласует его с СДО, проверяет атрибутный состав и передаёт валидный предзаказ Координатору.</span>
+          </div>
+
+          <div class="orchestration-node warp-node" data-step="4">
             <strong>WARP</strong>
-            <span>Проверяет готовность источника и возвращает READY / NOT_READY.</span>
+            <span>Проверяет готовность источника к загрузке. Возвращает READY или список невыполненных критериев.</span>
           </div>
 
-          <div class="orchestration-node cr-node">
+          <div class="orchestration-node cr-node" data-step="5">
             <strong>CR Manager</strong>
-            <span>Получает failed criteria и выполняет исправления через коннекторы.</span>
+            <span>Создаёт CR на проработку невыполненных критериев источника и организует исправления.</span>
           </div>
 
-          <div class="orchestration-node ep-node">
+          <div class="orchestration-node ep-node" data-step="6">
             <strong>ЕР-Конфигуратор</strong>
-            <span>Подключается после READY: создаёт заказ ЕР, подбирает параметры и готовит конфиг.</span>
+            <span>Начинает фазу создания реплики после READY: подбирает параметры, генерирует конфиг для ЕР и передаёт работу Init Loader.</span>
           </div>
 
           <div class="orchestration-line line-user"></div>
+          <div class="orchestration-line line-req"></div>
           <div class="orchestration-line line-warp"></div>
           <div class="orchestration-line line-cr"></div>
           <div class="orchestration-line line-ep"></div>
-
-          <div class="flow-label label-user">создаёт предзаказ</div>
-          <div class="flow-label label-warp">readiness check и final-check</div>
-          <div class="flow-label label-cr">задача на исправление</div>
-          <div class="flow-label label-ep">handoff после READY</div>
 
           <div class="orchestration-caption">READY — контрольная точка: источник подтверждён, можно переходить от предзаказа к созданию реплики.</div>
         </div>
@@ -1162,6 +1182,10 @@
           <div class="diagram-phase">
             <h3>До READY: подготовка источника</h3>
             <div class="diagram-agents">
+              <div class="diagram-agent req">
+                <strong>Агент требований</strong>
+                <span>проверяет запрос, СДО и атрибутный состав</span>
+              </div>
               <div class="diagram-agent">
                 <strong>Координатор</strong>
                 <span>принимает предзаказ, ведёт статус, делегирует работу</span>
@@ -1176,7 +1200,8 @@
               </div>
             </div>
             <div class="exchange-list">
-              <div class="exchange">Пользователь создаёт предзаказ → Координатор фиксирует `correlation_id`.</div>
+              <div class="exchange">Пользователь формулирует запрос → Агент требований проверяет СДО и атрибутный состав.</div>
+              <div class="exchange">Агент требований передаёт валидный предзаказ Координатору → Координатор фиксирует `correlation_id`.</div>
               <div class="exchange">Координатор спрашивает WARP: готов ли источник?</div>
               <div class="exchange">Если NOT_READY, Координатор передаёт failed criteria CR Manager.</div>
               <div class="exchange">CR Manager исправляет и сообщает Координатору результат self-check.</div>
@@ -1282,6 +1307,7 @@
             <tr>
               <th>Вопрос</th>
               <th>Пользователь</th>
+              <th>Агент требований</th>
               <th>Координатор</th>
               <th>WARP</th>
               <th>CR Manager</th>
@@ -1292,6 +1318,7 @@
             <tr>
               <td>Кто создаёт предзаказ?</td>
               <td>Инициирует запрос</td>
+              <td>Проверяет запрос, СДО и атрибутный состав</td>
               <td>Создаёт запись и ID</td>
               <td>Нет</td>
               <td>Нет</td>
@@ -1300,6 +1327,7 @@
             <tr>
               <td>Кто меняет статус предзаказа?</td>
               <td>Нет</td>
+              <td>Нет, только готовит валидный вход</td>
               <td>Единственный владелец статуса</td>
               <td>Нет, только вердикт</td>
               <td>Нет, только callback</td>
@@ -1308,6 +1336,7 @@
             <tr>
               <td>Кто решает, готов ли источник?</td>
               <td>Нет</td>
+              <td>Нет, проверяет полноту требований до запуска</td>
               <td>Запрашивает проверку</td>
               <td>Единственный authority</td>
               <td>Только self-check через WARP</td>
@@ -1317,12 +1346,14 @@
               <td>Кто чинит источник?</td>
               <td>Может помогать экспертизой</td>
               <td>Нет</td>
+              <td>Нет</td>
               <td>Нет, даёт инструкции</td>
               <td>Да, выполняет remediation</td>
               <td>Нет</td>
             </tr>
             <tr>
               <td>Кто стартует работу после READY?</td>
+              <td>Нет</td>
               <td>Нет</td>
               <td>Передаёт задачу дальше</td>
               <td>Нет</td>
@@ -1332,8 +1363,9 @@
             <tr>
               <td>Где полезен LLM?</td>
               <td>Формулирует запрос</td>
+              <td>Уточнение запроса, проверка атрибутов, формализация требований</td>
               <td>Объяснение статуса, summary, анализ trace</td>
-              <td> Для предоставления рекомендаций, по выполнению критериев</td>
+              <td>Рекомендации по выполнению критериев</td>
               <td>Планирование remediation и выбор tools</td>
               <td>Подбор параметров и объяснение конфига</td>
             </tr>
@@ -1353,6 +1385,7 @@
 
     const agents = {
       user: { label: "Пользователь", avatar: "Я", cls: "user" },
+      req: { label: "Агент управления требованиями", avatar: "ТР", cls: "req" },
       coordinator: { label: "Координатор", avatar: "К", cls: "coord" },
       warp: { label: "WARP", avatar: "W", cls: "warp" },
       cr: { label: "CR Manager", avatar: "CR", cls: "cr" },
@@ -1378,6 +1411,31 @@
           "чат-интерфейс",
           "статус предзаказа",
           "объяснения Координатора"
+        ]
+      },
+      req: {
+        title: "Агент управления требованиями",
+        subtitle: "Входной фильтр и формализатор предзаказа",
+        purpose: "Получает сообщение пользователя, согласует запрос с СДО, проверяет атрибутный состав и только после этого передаёт валидный предзаказ Координатору.",
+        does: [
+          "принимает исходный запрос пользователя",
+          "проверяет, достаточно ли данных для предзаказа",
+          "согласует запрос с СДО",
+          "проверяет атрибутный состав источника",
+          "формирует валидный предзаказ для Координатора"
+        ],
+        doesNot: [
+          "не управляет жизненным циклом предзаказа после передачи Координатору",
+          "не проверяет техническую готовность источника вместо WARP",
+          "не создаёт CR-задачи",
+          "не запускает ЕР-конфигурацию"
+        ],
+        worksWith: [
+          "сообщение пользователя",
+          "СДО",
+          "атрибутный состав источника",
+          "preorder draft",
+          "Coordinator handoff"
         ]
       },
       coordinator: {
@@ -1655,6 +1713,12 @@
     async function runConversation(sourceId) {
       setBusy(true);
       try {
+        await addTyping("req", 1600, "проверяет запрос и обязательные атрибуты");
+        addMessage("req", `Запрос получен. Проверяю, что для источника ${sourceId} достаточно атрибутов и что предзаказ можно согласовать с СДО.`);
+
+        await addTyping("req", 1500, "согласует предзаказ с СДО");
+        addMessage("req", "СДО-согласование и атрибутная проверка пройдены. Передаю валидный предзаказ Координатору.");
+
         await addTyping("coordinator", 1700, "разбирает запрос пользователя");
         addMessage("coordinator", `Принял запрос. Создаю предзаказ для источника ${sourceId} и присваиваю correlation_id.`);
 
