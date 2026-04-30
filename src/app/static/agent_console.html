@@ -1110,7 +1110,7 @@
         </button>
         <button class="top-agent" type="button" data-agent="ep">
           <div class="agent-color ep"></div>
-          <div><strong>ЕР-Координатор</strong><span>ведёт заказ после READY</span></div>
+          <div><strong>ЕР-Конфигуратор</strong><span>ведёт заказ после READY</span></div>
         </button>
       </div>
     </header>
@@ -1213,7 +1213,7 @@
           </div>
 
           <div class="orchestration-node ep-node" data-step="6">
-            <strong>ЕР-Координатор</strong>
+            <strong>ЕР-Конфигуратор</strong>
             <span>Подключается после READY, когда предзаказ становится заказом: подбирает параметры, генерирует конфиг для ЕР и передаёт работу Init Loader.</span>
           </div>
 
@@ -1261,7 +1261,7 @@
             <h3>После READY: создание реплики</h3>
             <div class="diagram-agents">
               <div class="diagram-agent ep">
-                <strong>ЕР-Координатор</strong>
+                <strong>ЕР-Конфигуратор</strong>
                 <span>создаёт заказ в другом Jira-пространстве и генерирует конфиг</span>
               </div>
               <div class="diagram-agent loader">
@@ -1350,7 +1350,7 @@
               <th>Координатор</th>
               <th>WARP</th>
               <th>CR Manager</th>
-              <th>ЕР-Координатор</th>
+              <th>ЕР-Конфигуратор</th>
             </tr>
           </thead>
           <tbody>
@@ -1429,7 +1429,7 @@
       coordinator: { label: "Координатор", avatar: "К", cls: "coord" },
       warp: { label: "WARP", avatar: "W", cls: "warp" },
       cr: { label: "CR Manager", avatar: "CR", cls: "cr" },
-      ep: { label: "ЕР-Координатор", avatar: "EP", cls: "ep" }
+      ep: { label: "ЕР-Конфигуратор", avatar: "EP", cls: "ep" }
     };
 
     const agentDetails = {
@@ -1504,7 +1504,7 @@
           "запрашивает у WARP официальную проверку готовности",
           "если готовность ниже 100%, передаёт работу CR Manager",
           "следит за попытками доработки и эскалацией",
-          "после READY передаёт заказ ЕР-Координатору"
+          "после READY передаёт заказ ЕР-Конфигуратору"
         ],
         doesNot: [
           "валидный предзаказ",
@@ -1586,7 +1586,7 @@
         ]
       },
       ep: {
-        title: "ЕР-Координатор",
+        title: "ЕР-Конфигуратор",
         subtitle: "Первый агент после превращения предзаказа в заказ",
         purpose: "Включается только после 100% READY: предзаказ становится заказом, и начинается контур создания реплики.",
         does: [
@@ -1622,7 +1622,7 @@
       ["WAITING_CR", "CR Manager ведёт CR"],
       ["FINAL_CHECK", "официальная проверка"],
       ["READY", "источник подтверждён"],
-      ["EP_TASK_CREATED", "задача ЕР-Координатору"],
+      ["EP_TASK_CREATED", "задача ЕР-Конфигуратору"],
       ["CONFIGURING", "подбор параметров"],
       ["LOADING", "загрузка данных"],
       ["PUBLISHED", "реплика опубликована"]
@@ -1941,7 +1941,7 @@
         addMessage("warp", "Финальная проверка завершена: все критерии выполнены. Источник готов для создания реплики.");
 
         await addTyping("coordinator", 1600, "обновляет статус предзаказа");
-        addMessage("coordinator", `Принял результат WARP. Меняю статус предзаказа ${readyOrder.order_id} на READY. После этого передаю работу ЕР-Координатору для создания заказа в ЕР-контуре.`);
+        addMessage("coordinator", `Принял результат WARP. Меняю статус предзаказа ${readyOrder.order_id} на READY. После этого передаю работу ЕР-Конфигуратору для создания заказа в ЕР-контуре.`);
 
         await addTyping("ep", 1900, "принимает заказ после READY");
         addMessage("ep", "Заказ принят. Создаю ЕР-задачу, подбираю параметры реплики и начинаю сборку конфига для Init Loader.");
@@ -1962,7 +1962,7 @@
         return `Сейчас предзаказ ${state.order.order_id} находится в статусе ${state.order.status}. Источник: ${state.order.source_id}.`;
       }
       if (lower.includes("ready")) {
-        return "READY — это рубеж 100% готовности по WARP. До READY мы работаем с предзаказом; после READY Координатор превращает его в заказ и передаёт ЕР-Координатору.";
+        return "READY — это рубеж 100% готовности по WARP. До READY мы работаем с предзаказом; после READY Координатор превращает его в заказ и передаёт ЕР-Конфигуратору.";
       }
       if (lower.includes("trace") || lower.includes("лог")) {
         return `Trace доступен по correlation_id ${state.order.correlation_id}. Сейчас собрано ${state.trace.length} событий.`;
