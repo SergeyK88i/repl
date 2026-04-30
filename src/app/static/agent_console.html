@@ -45,8 +45,9 @@
 
     .app {
       min-height: 100vh;
+      min-height: 0;
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
     }
 
     .topbar {
@@ -139,11 +140,13 @@
     .layout {
       width: calc(100% - 28px);
       margin: 0 auto;
-      padding: 18px 0;
+      padding: 10px 0;
       display: grid;
       grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
       gap: 16px;
-      min-height: calc(100vh - 78px);
+      height: calc((100vh - 78px) * 2);
+      min-height: 900px;
+      min-height: 0;
     }
 
     .sidebar,
@@ -317,19 +320,19 @@
     }
 
     .room-head {
-      padding: 18px 20px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
-      gap: 18px;
+      gap: 14px;
       align-items: start;
     }
 
     .room-head p {
-      margin: 6px 0 0;
+      margin: 4px 0 0;
       color: var(--muted);
       max-width: 720px;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .mini-actions {
@@ -359,7 +362,8 @@
     }
 
     .chat {
-      padding: 20px;
+      min-height: 0;
+      padding: 16px;
       overflow: auto;
       background:
         linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0)),
@@ -459,7 +463,7 @@
 
     .composer {
       border-top: 1px solid var(--line);
-      padding: 14px;
+      padding: 10px 14px;
       background: rgba(255,255,255,0.92);
     }
 
@@ -1415,7 +1419,8 @@
       order: null,
       busy: false,
       trace: [],
-      scenarioFinished: false
+      scenarioFinished: false,
+      autoScroll: true
     };
 
     const agents = {
@@ -1641,6 +1646,26 @@
       return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
+    function isChatNearBottom() {
+      const threshold = 96;
+      return els.chat.scrollHeight - els.chat.scrollTop - els.chat.clientHeight <= threshold;
+    }
+
+    function scrollChatToBottom(force = false) {
+      if (!force && !state.autoScroll) return;
+      const scroll = () => {
+        els.chat.scrollTop = els.chat.scrollHeight;
+      };
+      requestAnimationFrame(() => {
+        scroll();
+        requestAnimationFrame(scroll);
+      });
+    }
+
+    function shouldFollowNewMessage() {
+      return state.autoScroll && isChatNearBottom();
+    }
+
     async function api(path, options = {}) {
       const response = await fetch(path, {
         headers: { "Content-Type": "application/json", ...(options.headers || {}) },
@@ -1700,6 +1725,7 @@
     }
 
     function addMessage(agentKey, text) {
+      const shouldScroll = shouldFollowNewMessage();
       const agent = agents[agentKey];
       const wrap = document.createElement("div");
       wrap.className = `message ${agentKey === "user" ? "user-message" : ""}`;
@@ -1719,10 +1745,14 @@
       }
 
       els.messages.appendChild(wrap);
-      els.chat.scrollTop = els.chat.scrollHeight;
+      if (shouldScroll) {
+        state.autoScroll = true;
+        scrollChatToBottom(true);
+      }
     }
 
     async function addTyping(agentKey, ms = 1600, note = "размышляет") {
+      const shouldScroll = shouldFollowNewMessage();
       const agent = agents[agentKey];
       const wrap = document.createElement("div");
       wrap.className = "message";
@@ -1735,9 +1765,13 @@
         </div>
       `;
       els.messages.appendChild(wrap);
-      els.chat.scrollTop = els.chat.scrollHeight;
+      if (shouldScroll) {
+        state.autoScroll = true;
+        scrollChatToBottom(true);
+      }
       await wait(ms + 5000);
       wrap.remove();
+      if (shouldFollowNewMessage()) scrollChatToBottom(true);
     }
 
     function escapeHtml(text) {
@@ -1959,6 +1993,7 @@
       state.order = null;
       state.trace = [];
       state.scenarioFinished = false;
+      state.autoScroll = true;
       updateOrder(null);
       els.messages.innerHTML = "";
       if (withGreeting) {
@@ -1978,6 +2013,10 @@
       els.input.style.height = "auto";
       els.input.style.height = `${Math.min(140, els.input.scrollHeight)}px`;
     });
+
+    els.chat.addEventListener("scroll", () => {
+      state.autoScroll = isChatNearBottom();
+    }, { passive: true });
 
     document.querySelectorAll("[data-prompt]").forEach((button) => {
       button.addEventListener("click", async () => {
