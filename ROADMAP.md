@@ -45,7 +45,7 @@
 
 - `PROJECT_RULES.md`;
 - `SCENARIOS.md`;
-- `WORK_DONE.md`;
+- `FEATURE_BACKLOG.md` с историческим блоком `FR-0`;
 - `architecture.html`;
 - UI console.
 

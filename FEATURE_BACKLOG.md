@@ -5,9 +5,19 @@
 Принцип работы:
 
 ```text
-ROADMAP.md показывает фазу
-FEATURE_BACKLOG.md разбивает фазу на конкретные фичи
+ROADMAP.md показывает крупные фазы развития
+FEATURE_BACKLOG.md переводит эти фазы в FR-релизы и конкретные F-фичи
 каждая фича имеет цель, границы, acceptance criteria и статус
+```
+
+`FR-*` — крупный этап из roadmap или исторический этап проекта.
+`F-*` — конкретная реализуемая фича внутри FR.
+
+Пример:
+
+```text
+ROADMAP.md Фаза 2 -> FEATURE_BACKLOG.md FR-2
+FR-2 -> F-002, F-003, F-004, F-005
 ```
 
 Статусы:
@@ -20,11 +30,92 @@ done        - реализовано и проверено
 blocked     - есть внешний блокер
 ```
 
-## F-001. LLM Provider Foundation
+## FR-0. Presentation POC на заглушках
 
 Статус: `done`
 
-Roadmap phase: инфраструктурная подготовка для LLM reasoning.
+Roadmap phase: Фаза 0. Согласование концепции.
+
+Цель:
+
+```text
+Собрать первый production-shaped POC, чтобы показать руководству идею агентной системы: от пользовательского предзаказа до READY и запуска следующей фазы репликации.
+```
+
+Что было сделано:
+
+- зафиксирована агентная архитектура и границы ответственности;
+- выбран Python/FastAPI как базовый технологический стек;
+- описаны правила проекта в `PROJECT_RULES.md`;
+- описаны сценарии в `SCENARIOS.md`;
+- подготовлен бизнесовый материал в `MANAGEMENT_PRESENTATION_NOTES.md`;
+- создан backend POC вокруг Coordinator Agent;
+- реализована state machine статусов предзаказа;
+- добавлены replaceable ports/adapters;
+- реализованы mock adapters:
+  - `MockWarpAdapter`;
+  - `MockCrManagerAdapter`;
+  - `MockReplicaInitAdapter`;
+  - in-memory repositories;
+  - in-memory trace adapter;
+- добавлена идемпотентная обработка повторного callback-а;
+- добавлена проверка принадлежности CR/remediation-задачи предзаказу;
+- реализована retry-логика до `FAILED`;
+- добавлены trace events от Координатора, WARP и CR Manager;
+- создан chat-first UI для демонстрации агентной комнаты;
+- добавлена визуальная схема взаимодействия агентов;
+- подготовлены презентационные HTML-страницы;
+- добавлены unit tests для текущего POC.
+
+Основные POC endpoints:
+
+```text
+POST /order
+GET  /order/{order_id}
+POST /order/{order_id}/task-completed
+GET  /trace/{correlation_id}
+GET  /console
+```
+
+Демонстрационные сценарии:
+
+- источник сразу проходит WARP и становится `READY`;
+- источник не готов, Координатор создаёт remediation-поручение для CR Manager;
+- CR Manager завершает задачу, Координатор делает WARP final-check и переводит предзаказ в `READY`;
+- источник не проходит после лимита попыток и уходит в `FAILED`.
+
+Acceptance criteria:
+
+- можно показать end-to-end концепцию без реальных внешних систем;
+- заглушки спрятаны за ports/adapters и могут заменяться реальными API;
+- Coordinator не создаёт Jira/CR сам, а только создаёт remediation-поручение;
+- READY ставит только Coordinator после WARP final-check;
+- сценарии можно запускать через API и UI;
+- документация объясняет идею для разработки и для руководства.
+
+Результат:
+
+```text
+Идея -> архитектурные правила -> backend POC -> UI-демонстрация -> сценарии -> roadmap -> feature backlog
+```
+
+## FR-1. Coordinator Core и LLM-инфраструктура
+
+Статус: `in_progress`
+
+Roadmap phase: Фаза 1. Укрепление ядра Координатора.
+
+Цель:
+
+```text
+Укрепить основу системы вокруг Coordinator Agent и подготовить общую LLM-инфраструктуру для будущих reasoning-агентов.
+```
+
+### F-001. LLM Provider Foundation
+
+Статус: `done`
+
+Roadmap phase: Фаза 1. Укрепление ядра Координатора.
 
 Цель:
 
@@ -71,7 +162,19 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 set -a && source .env.local && set +a && PYTHONPATH=src python3 scripts/llm_smoke.py
 ```
 
-## F-002. CR Manager Agent Skeleton
+## FR-2. CR Manager Agent и Jira
+
+Статус: `next`
+
+Roadmap phase: Фаза 2. CR Manager Agent и Jira.
+
+Цель:
+
+```text
+Реализовать CR Manager как отдельный агентный модуль, который получает remediation-поручение от Coordinator, создаёт Jira/CR и готовит основу для дальнейшей оркестрации исправлений.
+```
+
+### F-002. CR Manager Agent Skeleton
 
 Статус: `next`
 
@@ -107,7 +210,7 @@ Acceptance criteria:
 - может быть вызван из Coordinator через port/adapter;
 - application/domain не зависят от FastAPI/Jira/WARP SDK напрямую.
 
-## F-003. Mock Jira Adapter
+### F-003. Mock Jira Adapter
 
 Статус: `planned`
 
@@ -126,7 +229,7 @@ Acceptance criteria:
 - CR Manager сохраняет связь task_id -> jira_issue_id;
 - повторный вызов не создаёт дубль при том же idempotency key.
 
-## F-004. CR Manager Creates Jira/CR From WARP Failed Criteria
+### F-004. CR Manager Creates Jira/CR From WARP Failed Criteria
 
 Статус: `planned`
 
@@ -146,7 +249,7 @@ Acceptance criteria:
 - trace содержит `jira_issue_created`;
 - tests покрывают happy path и idempotency.
 
-## F-005. Coordinator Dispatches To Real CR Manager Module
+### F-005. Coordinator Dispatches To Real CR Manager Module
 
 Статус: `planned`
 
@@ -166,7 +269,19 @@ Acceptance criteria:
 - дубли callback не ломают состояние;
 - tests покрывают Coordinator -> CR Manager flow.
 
-## F-006. Real WARP Adapter
+## FR-3. Real WARP Adapter
+
+Статус: `planned`
+
+Roadmap phase: Фаза 3. Реальный WARP adapter.
+
+Цель:
+
+```text
+Заменить mock WARP на интеграцию с внешним WARP API другой команды через `WarpPort` и `HttpWarpAdapter`.
+```
+
+### F-006. Real WARP Adapter
 
 Статус: `planned`
 
