@@ -1,0 +1,1 @@
+"""HTTP CR Manager adapters."""

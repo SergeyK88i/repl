@@ -9,6 +9,7 @@ from agents.coordinator.adapters.in_process.cr_manager import InProcessCrManager
 from agents.coordinator.adapters.mock.replica_init import MockReplicaInitAdapter
 from agents.coordinator.adapters.mock.warp import MockWarpAdapter
 from agents.coordinator.application.service import CoordinatorService
+from agents.cr_manager.adapters.http.jira import HttpJiraAdapter, HttpJiraAdapterConfig
 from agents.cr_manager.adapters.in_memory.task_repository import (
     InMemoryCrManagerTaskRepository,
 )
@@ -63,8 +64,21 @@ class AppContainer:
         raise NotImplementedError("HTTP Replica Init adapter is not implemented yet")
 
     def _build_jira(self):
-        if self.settings.adapter_profile == AdapterProfile.MOCK:
+        if self.settings.jira_adapter_profile == AdapterProfile.MOCK:
             return MockJiraAdapter()
+        if self.settings.jira_adapter_profile == AdapterProfile.HTTP:
+            return HttpJiraAdapter(
+                HttpJiraAdapterConfig(
+                    base_url=self.settings.jira_base_url,
+                    browse_url=self.settings.jira_browse_url,
+                    project_key=self.settings.jira_project_key,
+                    issue_type=self.settings.jira_issue_type,
+                    email=self.settings.jira_email,
+                    api_token=self.settings.jira_api_token,
+                    bearer_token=self.settings.jira_bearer_token,
+                    timeout_seconds=self.settings.jira_timeout_seconds,
+                )
+            )
         raise NotImplementedError("HTTP Jira adapter is not implemented yet")
 
     def _build_cr_manager_warp(self):

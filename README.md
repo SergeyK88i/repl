@@ -65,6 +65,8 @@ GIGACHAT_TIMEOUT_SECONDS=60
 - mock WARP adapter;
 - in-process Coordinator -> CR Manager adapter;
 - mock Jira adapter;
+- HTTP Jira adapter;
+- lightweight fake Jira API for local development;
 - mock WARP remediation adapter для CR Manager;
 - mock Replica Init;
 - in-memory order repository;
@@ -97,6 +99,25 @@ GET  /trace/{correlation_id}
 GET  /console
 GET  /product
 GET  /internal-delivery-status-2026
+```
+
+## Fake Jira
+
+Лёгкая fake Jira нужна для локальной проверки HTTP-контракта без установки настоящей Jira:
+
+```bash
+PYTHONPATH=src python3 -m uvicorn fakes.jira.app:app --port 9001
+JIRA_ADAPTER_PROFILE=http JIRA_BASE_URL=http://127.0.0.1:9001 JIRA_BROWSE_URL=http://127.0.0.1:9001 PYTHONPATH=src python3 -m uvicorn app.main:app --port 8000
+```
+
+Fake Jira поддерживает минимальный набор Jira-like endpoints:
+
+```text
+POST /rest/api/3/issue
+GET  /rest/api/3/issue/{issueIdOrKey}
+POST /rest/api/3/issue/{issueIdOrKey}/comment
+GET  /rest/api/3/issue/{issueIdOrKey}/transitions
+POST /rest/api/3/issue/{issueIdOrKey}/transitions
 ```
 
 ## Пример создания заказа

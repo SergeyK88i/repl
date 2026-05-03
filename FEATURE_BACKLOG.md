@@ -17,7 +17,7 @@ FEATURE_BACKLOG.md переводит эти фазы в FR-релизы и ко
 
 ```text
 ROADMAP.md Фаза 2 -> FEATURE_BACKLOG.md FR-2
-FR-2 -> F-002, F-003, F-004, F-005
+FR-2 -> F-002, F-003, F-004, F-005, F-006
 ```
 
 Статусы:
@@ -224,7 +224,7 @@ Acceptance criteria:
 
 - `ports/jira.py` — в `F-003`;
 - `ports/warp.py` — в `F-004`;
-- `ports/coordinator_callback.py` — в `F-007`, когда CR Manager начнёт делать self-check и сам сообщать Coordinator результат remediation.
+- `ports/coordinator_callback.py` — в `F-008`, когда CR Manager начнёт делать self-check и сам сообщать Coordinator результат remediation.
 
 ### F-003. Mock Jira Adapter
 
@@ -333,7 +333,7 @@ Acceptance criteria:
 - trace содержит события Coordinator, WARP и CR Manager в одном `correlation_id`;
 - tests покрывают полный Coordinator -> CR Manager flow.
 
-### F-012. Remove Legacy Failed Criteria Contract
+### F-013. Remove Legacy Failed Criteria Contract
 
 Статус: `planned`
 
@@ -353,6 +353,32 @@ Acceptance criteria:
 - tests обновлены на structured failed criteria;
 - документация помечает legacy контракт удалённым.
 
+### F-006. Fake Jira HTTP Contract
+
+Статус: `done`
+
+Roadmap phase: Фаза 2. CR Manager Agent и Jira.
+
+Цель:
+
+```text
+Добавить лёгкую fake Jira для локальной разработки и HTTP Jira adapter, чтобы проверить внешний HTTP-контракт без подъёма настоящей Jira.
+```
+
+Acceptance criteria:
+
+- есть `HttpJiraAdapter`, реализующий `JiraPort.create_issue`;
+- adapter собирает Jira-like payload `POST /rest/api/3/issue`;
+- adapter передаёт `X-Idempotency-Key`;
+- fake Jira поддерживает:
+  - `POST /rest/api/3/issue`;
+  - `GET /rest/api/3/issue/{issueIdOrKey}`;
+  - `POST /rest/api/3/issue/{issueIdOrKey}/comment`;
+  - `GET /rest/api/3/issue/{issueIdOrKey}/transitions`;
+  - `POST /rest/api/3/issue/{issueIdOrKey}/transitions`;
+- Jira adapter можно включить отдельно через `JIRA_ADAPTER_PROFILE=http`, не переводя весь проект в HTTP profile;
+- tests покрывают payload/header и idempotency fake Jira.
+
 ## FR-3. Real WARP Adapter
 
 Статус: `next`
@@ -365,7 +391,7 @@ Roadmap phase: Фаза 3. Реальный WARP adapter.
 Заменить mock WARP на интеграцию с внешним WARP API другой команды через `WarpPort` и `HttpWarpAdapter`.
 ```
 
-### F-006. Real WARP Adapter
+### F-007. Real WARP Adapter
 
 Статус: `next`
 
@@ -398,7 +424,7 @@ Roadmap phase: Фаза 4. CR Manager remediation orchestration.
 Расширить CR Manager от создания Jira/CR до управляемого исполнения remediation через tools, connectors, self-check и policy.
 ```
 
-### F-007. CR Manager Tools, Connectors and Self-check
+### F-008. CR Manager Tools, Connectors and Self-check
 
 Статус: `planned`
 
@@ -428,7 +454,7 @@ Acceptance criteria:
 - CR Manager пишет trace events tool execution;
 - tests покрывают happy path, self-check failed и escalation.
 
-### F-008. CR Manager Reasoning Layer
+### F-009. CR Manager Reasoning Layer
 
 Статус: `planned`
 
@@ -466,7 +492,7 @@ Roadmap phase: Фаза 5. Requirements Agent.
 Реализовать агента, который проверяет качество пользовательского входа до технической проверки WARP: КЭ, выбранные атрибуты, обязательные поля и согласование с СДО.
 ```
 
-### F-009. Requirements Agent Skeleton and Mock Catalogs
+### F-010. Requirements Agent Skeleton and Mock Catalogs
 
 Статус: `planned`
 
@@ -503,7 +529,7 @@ Roadmap phase: Фаза 6. Trace Collector.
 Вынести trace из in-memory adapter в устойчивое хранилище или отдельный Trace Collector и подготовить основу для объяснений/аудита.
 ```
 
-### F-010. Trace Storage and Agent Timeline
+### F-011. Trace Storage and Agent Timeline
 
 Статус: `planned`
 
@@ -536,7 +562,7 @@ Roadmap phase: Фаза 9. ИИ-слой агентов.
 Добавить LLM reasoning там, где он даёт ценность пользователю и команде, не ломая deterministic workflow и ownership критичных решений.
 ```
 
-### F-011. Coordinator Explanation Reasoning
+### F-012. Coordinator Explanation Reasoning
 
 Статус: `planned`
 

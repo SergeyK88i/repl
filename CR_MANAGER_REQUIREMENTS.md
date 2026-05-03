@@ -138,7 +138,7 @@ Coordinator передаёт CR Manager не инструкции, а конте
 Migration cleanup:
 
 ```text
-F-012 - Remove Legacy Failed Criteria Contract
+F-013 - Remove Legacy Failed Criteria Contract
 ```
 
 Эта фича удалит legacy строковый формат после того, как Coordinator и WARP adapter начнут передавать structured failed criteria.
@@ -713,6 +713,10 @@ UNKNOWN
 - in-process adapter для вызова CR Manager из Coordinator module;
 - Coordinator отправляет remediation-поручение в реальный `CrManagerService`, а не в standalone mock;
 - tests покрывают Coordinator -> CR Manager flow.
+- `HttpJiraAdapter` для Jira-like HTTP API;
+- fake Jira app для локальной разработки и contract-like проверок;
+- отдельный env-переключатель `JIRA_ADAPTER_PROFILE=http`;
+- tests для Jira HTTP payload/header и fake Jira idempotency.
 
 Не реализовано пока:
 
@@ -728,5 +732,6 @@ F-002 - CR Manager Agent Skeleton
 F-003 - Mock Jira Adapter
 F-004 - CR Manager creates Jira/CR from WARP failed criteria
 F-005 - Coordinator dispatches to real CR Manager module
-F-006 - Real WARP Adapter
+F-006 - Fake Jira HTTP Contract
+F-007 - Real WARP Adapter
 ```

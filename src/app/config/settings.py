@@ -13,7 +13,16 @@ class AdapterProfile(str, Enum):
 @dataclass(frozen=True)
 class Settings:
     adapter_profile: AdapterProfile = AdapterProfile.MOCK
+    jira_adapter_profile: AdapterProfile = AdapterProfile.MOCK
     max_attempts: int = 3
+    jira_base_url: str = "http://127.0.0.1:9001"
+    jira_browse_url: str | None = None
+    jira_project_key: str = "DREAM"
+    jira_issue_type: str = "Task"
+    jira_email: str | None = None
+    jira_api_token: str | None = None
+    jira_bearer_token: str | None = None
+    jira_timeout_seconds: float = 30.0
     gigachat_auth_token: str | None = None
     gigachat_scope: str = "GIGACHAT_API_PERS"
     gigachat_model: str = "GigaChat"
@@ -28,10 +37,20 @@ class Settings:
 
 def load_settings() -> Settings:
     profile = os.getenv("ADAPTER_PROFILE", AdapterProfile.MOCK.value)
+    jira_profile = os.getenv("JIRA_ADAPTER_PROFILE", profile)
     max_attempts = int(os.getenv("MAX_ATTEMPTS", "3"))
     return Settings(
         adapter_profile=AdapterProfile(profile),
+        jira_adapter_profile=AdapterProfile(jira_profile),
         max_attempts=max_attempts,
+        jira_base_url=os.getenv("JIRA_BASE_URL", "http://127.0.0.1:9001"),
+        jira_browse_url=os.getenv("JIRA_BROWSE_URL"),
+        jira_project_key=os.getenv("JIRA_PROJECT_KEY", "DREAM"),
+        jira_issue_type=os.getenv("JIRA_ISSUE_TYPE", "Task"),
+        jira_email=os.getenv("JIRA_EMAIL"),
+        jira_api_token=os.getenv("JIRA_API_TOKEN"),
+        jira_bearer_token=os.getenv("JIRA_BEARER_TOKEN"),
+        jira_timeout_seconds=float(os.getenv("JIRA_TIMEOUT_SECONDS", "30")),
         gigachat_auth_token=os.getenv("GIGACHAT_AUTH_TOKEN"),
         gigachat_scope=os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS"),
         gigachat_model=os.getenv("GIGACHAT_MODEL", "GigaChat"),
