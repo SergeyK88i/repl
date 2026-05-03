@@ -64,6 +64,39 @@ Coordinator передаёт CR Manager не инструкции, а конте
 }
 ```
 
+Промежуточный F-004 контракт:
+
+```json
+{
+  "order_id": "ORD-123",
+  "source_id": "SRC-123",
+  "correlation_id": "CORR-001",
+  "load_plan": "PLAN_A",
+  "warp_check_id": "WARP-CHECK-123",
+  "failed_criteria": ["C1", "C3.P2"],
+  "failed_items": [
+    {
+      "criteria_id": "C1",
+      "failed_params": ["P1", "P5"]
+    }
+  ],
+  "attempt": 1,
+  "action": "remediate"
+}
+```
+
+В F-004 `failed_criteria: list[str]` остаётся для обратной совместимости с текущим Coordinator.
+
+Новые поля:
+
+- `load_plan` — optional;
+- `warp_check_id` — optional;
+- `failed_items` — optional structured representation.
+
+Если пришёл legacy-формат, CR Manager работает по `failed_criteria`.
+
+Если пришёл structured-формат, CR Manager использует `failed_items`, `load_plan` и `warp_check_id` для Jira/CR и WARP remediation.
+
 Целевой контракт:
 
 ```json
@@ -84,6 +117,8 @@ Coordinator передаёт CR Manager не инструкции, а конте
 }
 ```
 
+В целевом контракте legacy `failed_criteria: list[str]` будет удалён после migration cleanup.
+
 Обязательные поля:
 
 - `preorder_id` или временный POC `order_id`;
@@ -99,6 +134,14 @@ Coordinator передаёт CR Manager не инструкции, а конте
 - `warp_check_id`;
 - `failed_criteria[].criteria_id`;
 - `failed_criteria[].failed_params[]`.
+
+Migration cleanup:
+
+```text
+F-012 - Remove Legacy Failed Criteria Contract
+```
+
+Эта фича удалит legacy строковый формат после того, как Coordinator и WARP adapter начнут передавать structured failed criteria.
 
 ## API
 

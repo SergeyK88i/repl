@@ -272,11 +272,20 @@ Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
 Acceptance criteria:
 
-- CR Manager получает remediation context от Coordinator;
+- CR Manager принимает legacy `failed_criteria: list[str]` без поломки текущего Coordinator;
+- CR Manager принимает structured `failed_items` с `criteria_id` и `failed_params`;
+- CR Manager принимает optional `load_plan` и `warp_check_id`;
 - CR Manager запрашивает remediation у WARP adapter;
 - CR Manager создаёт Jira/CR с читаемым описанием;
 - trace содержит `jira_issue_created`;
 - tests покрывают happy path и idempotency.
+
+Migration note:
+
+```text
+В F-004 расширяем контракт, но не удаляем legacy failed_criteria: list[str].
+Legacy-формат будет удалён отдельной будущей фичей после перехода Coordinator и WARP adapter на structured failed_items.
+```
 
 ### F-005. Coordinator Dispatches To Real CR Manager Module
 
@@ -297,6 +306,26 @@ Acceptance criteria:
 - Coordinator сохраняет task id;
 - дубли callback не ломают состояние;
 - tests покрывают Coordinator -> CR Manager flow.
+
+### F-012. Remove Legacy Failed Criteria Contract
+
+Статус: `planned`
+
+Roadmap phase: migration cleanup after Coordinator/WARP structured contract adoption.
+
+Цель:
+
+```text
+Удалить legacy `failed_criteria: list[str]` из CR Manager-facing контракта после того, как Coordinator и WARP adapter начнут передавать structured failed_items.
+```
+
+Acceptance criteria:
+
+- Coordinator отправляет `failed_items` вместо legacy-only `failed_criteria`;
+- WARP adapter маппит failed criteria/params в structured contract;
+- CR Manager не зависит от строкового формата `C3.P2`;
+- tests обновлены на structured failed criteria;
+- документация помечает legacy контракт удалённым.
 
 ## FR-3. Real WARP Adapter
 
