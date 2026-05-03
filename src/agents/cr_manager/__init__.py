@@ -1,0 +1,1 @@
+"""CR Manager agent module."""

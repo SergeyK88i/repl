@@ -9,6 +9,10 @@ from agents.coordinator.adapters.mock.cr_manager import MockCrManagerAdapter
 from agents.coordinator.adapters.mock.replica_init import MockReplicaInitAdapter
 from agents.coordinator.adapters.mock.warp import MockWarpAdapter
 from agents.coordinator.application.service import CoordinatorService
+from agents.cr_manager.adapters.in_memory.task_repository import (
+    InMemoryCrManagerTaskRepository,
+)
+from agents.cr_manager.application.service import CrManagerService
 from app.config.settings import AdapterProfile, Settings, load_settings
 
 
@@ -17,11 +21,16 @@ class AppContainer:
         self.settings = settings or load_settings()
         self.orders = InMemoryOrderRepository()
         self.tasks = InMemoryTaskRepository()
+        self.cr_manager_tasks = InMemoryCrManagerTaskRepository()
         self.trace = InMemoryTraceAdapter()
         self.llm = self._build_llm()
         self.warp = self._build_warp()
         self.cr_manager = self._build_cr_manager()
         self.replica_init = self._build_replica_init()
+        self.cr_manager_service = CrManagerService(
+            tasks=self.cr_manager_tasks,
+            trace=self.trace,
+        )
         self.coordinator = CoordinatorService(
             orders=self.orders,
             tasks=self.tasks,

@@ -1,0 +1,1 @@
+"""CR Manager domain layer."""

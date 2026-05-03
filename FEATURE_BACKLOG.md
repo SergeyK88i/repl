@@ -164,7 +164,7 @@ set -a && source .env.local && set +a && PYTHONPATH=src python3 scripts/llm_smok
 
 ## FR-2. CR Manager Agent и Jira
 
-Статус: `next`
+Статус: `in_progress`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
@@ -176,7 +176,7 @@ Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
 ### F-002. CR Manager Agent Skeleton
 
-Статус: `next`
+Статус: `done`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
@@ -194,9 +194,6 @@ Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 - `domain/statuses.py`;
 - `application/service.py`;
 - `ports/task_repository.py`;
-- `ports/jira.py`;
-- `ports/warp.py`;
-- `ports/coordinator_callback.py`;
 - mock/in-memory adapters;
 - базовые trace events;
 - unit tests.
@@ -210,9 +207,28 @@ Acceptance criteria:
 - может быть вызван из Coordinator через port/adapter;
 - application/domain не зависят от FastAPI/Jira/WARP SDK напрямую.
 
+Реализовано сейчас:
+
+- `src/agents/cr_manager/`;
+- `POST /cr-manager/task`;
+- `GET /cr-manager/task/{task_id}`;
+- domain model `CrManagerTask`;
+- task lifecycle enum;
+- `CrManagerTaskRepositoryPort`;
+- in-memory task repository;
+- `CrManagerService`;
+- trace event `cr_task_received`;
+- unit tests для service и route handlers.
+
+Следующие ports из исходного объёма будут добавлены в следующих фичах:
+
+- `ports/jira.py` — в `F-003`;
+- `ports/warp.py` — в `F-004`;
+- `ports/coordinator_callback.py` — в `F-005`.
+
 ### F-003. Mock Jira Adapter
 
-Статус: `planned`
+Статус: `next`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 

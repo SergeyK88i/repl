@@ -319,7 +319,7 @@
       </article>
       <article class="metric">
         <strong>F-002</strong>
-        <span>следующая фича: CR Manager skeleton</span>
+        <span>CR Manager skeleton реализован как отдельный модуль</span>
       </article>
       <article class="metric">
         <strong>4</strong>
@@ -377,8 +377,8 @@
               <tr>
                 <td class="component"><strong>CR Manager</strong><span class="muted">remediation owner</span></td>
                 <td class="wide-cell">Создаёт CR/Jira и организует исправление невыполненных критериев.</td>
-                <td class="wide-cell"><strong>Mock adapter</strong> Coordinator пока видит CR Manager как заменяемый порт.</td>
-                <td class="wide-cell"><strong>F-002</strong> src/agents/cr_manager, task lifecycle, API, repository, trace.</td>
+                <td class="wide-cell"><strong>Agent module ready</strong> Есть src/agents/cr_manager, task lifecycle, API, repository, trace.</td>
+                <td class="wide-cell"><strong>F-003</strong> JiraPort + MockJiraAdapter для создания CR/Jira-задач.</td>
                 <td class="wide-cell">Jira, WARP remediation, connectors/subagents.</td>
                 <td class="wide-cell">CR Manager принимает task, создаёт record, возвращает task_id и пишет trace.</td>
               </tr>
@@ -417,7 +417,7 @@
         <div class="section">
           <div class="section-title">
             <h2>Feature queue</h2>
-            <span class="pill next">next: F-002</span>
+            <span class="pill next">next: F-003</span>
           </div>
           <div class="feature-list">
             <div class="feature">
@@ -434,7 +434,7 @@
                 <h3>CR Manager Agent Skeleton</h3>
                 <p class="muted">Первый настоящий модуль CR Manager с task lifecycle.</p>
               </div>
-              <span class="pill next">next</span>
+              <span class="pill done">done</span>
             </div>
             <div class="feature">
               <div class="code">F-003</div>
@@ -442,7 +442,7 @@
                 <h3>Mock Jira Adapter</h3>
                 <p class="muted">JiraPort, mock issue id/url, idempotency.</p>
               </div>
-              <span class="pill planned">planned</span>
+              <span class="pill next">next</span>
             </div>
             <div class="feature">
               <div class="code">F-004</div>

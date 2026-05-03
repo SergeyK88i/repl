@@ -11,6 +11,7 @@ Production-shaped POC системы ИИ-агентов для подготов
 | `PROJECT_RULES.md` | Главные правила реализации: Python, ports/adapters, границы агентов, LLM/tools/MCP/skills, state machine, trace, idempotency. |
 | `ARCHITECTURE_GUIDE.md` | Человеческая карта архитектуры: зачем нужны `app`, `agents`, `shared`, что лежит внутри агента, чем tool отличается от adapter. |
 | `AGENT_REQUIREMENTS.md` | Требования к агентам: роли, входы/выходы, state model, tools, LLM reasoning по агентам, ограничения. |
+| `CR_MANAGER_REQUIREMENTS.md` | Контрактное описание CR Manager: task lifecycle, Jira/CR, remediation, tools, LLM reasoning, trace и idempotency. |
 | `WARP_INTEGRATION_REQUIREMENTS.md` | Контрактная модель интеграции с внешним WARP: readiness, remediation, `load_plan`, `warp_check_id`, критерии и параметры. |
 | `FEATURE_BACKLOG.md` | Рабочая нарезка roadmap на конкретные фичи с acceptance criteria и статусами. |
 | `SCENARIOS.md` | Бизнес-сценарии и объяснение текущего POC API. |
@@ -86,6 +87,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 POST /order
 GET  /order/{order_id}
 POST /order/{order_id}/task-completed
+POST /cr-manager/task
+GET  /cr-manager/task/{task_id}
 GET  /trace/{correlation_id}
 GET  /console
 GET  /product
