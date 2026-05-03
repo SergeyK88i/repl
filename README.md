@@ -10,13 +10,15 @@ Production-shaped POC системы ИИ-агентов для подготов
 | --- | --- |
 | `PROJECT_RULES.md` | Главные правила реализации: Python, ports/adapters, границы агентов, LLM/tools/MCP/skills, state machine, trace, idempotency. |
 | `ARCHITECTURE_GUIDE.md` | Человеческая карта архитектуры: зачем нужны `app`, `agents`, `shared`, что лежит внутри агента, чем tool отличается от adapter. |
-| `AGENT_REQUIREMENTS.md` | Требования к агентам: роли, входы/выходы, state model, tools, LLM reasoning matrix, ограничения. |
+| `AGENT_REQUIREMENTS.md` | Требования к агентам: роли, входы/выходы, state model, tools, LLM reasoning по агентам, ограничения. |
 | `WARP_INTEGRATION_REQUIREMENTS.md` | Контрактная модель интеграции с внешним WARP: readiness, remediation, `load_plan`, `warp_check_id`, критерии и параметры. |
 | `FEATURE_BACKLOG.md` | Рабочая нарезка roadmap на конкретные фичи с acceptance criteria и статусами. |
 | `SCENARIOS.md` | Бизнес-сценарии и объяснение текущего POC API. |
 | `ROADMAP.md` | План развития от POC на заглушках до test/prod-ready агентной системы. |
 | `MANAGEMENT_PRESENTATION_NOTES.md` | Бизнес-описание для руководства без лишней технической детализации. |
 | `WORK_DONE.md` | История уже выполненной работы. |
+
+`agents.md` — исходная черновая постановка. Она полезна как контекст, но не является главным источником правил, если расходится с документами ниже.
 
 Если документы расходятся, приоритет такой:
 
