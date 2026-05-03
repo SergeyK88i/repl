@@ -101,15 +101,24 @@ CR Manager directly writes fake Jira data inside business logic.
 Правильная модель:
 
 ```text
-Agent = reasoning layer + tools + memory access + trace
+Agent = application service + domain logic + ports/adapters + optional LLM
+LLM = reasoning + skills + typed tools
 Tool = safe wrapper around a port
 Port = stable interface
 Adapter = mock or real implementation
+MCP server = optional implementation detail for tools/adapters
+Skill = instruction/playbook for LLM behavior, not system state
 ```
 
 LLM reasoning может использоваться внутри агентов, но LLM должен действовать только через разрешённые tools.
 
 LLM не должен напрямую вызывать Jira, WARP, базы данных, shell-скрипты или внешние API. Он должен вызывать типизированные tools, которые работают поверх портов и адаптеров.
+
+MCP servers и skills можно использовать в LLM-агентах, но они не должны заменять domain logic, state machine, contracts, ports и adapters.
+
+MCP server — это способ дать LLM или tool доступ к внешней системе. В нашей архитектуре MCP рассматривается как возможная реализация adapter или tool execution, например `JiraMcpAdapter`, `ConfluenceMcpAdapter`, `KnowledgeBaseMcpAdapter`.
+
+Skill — это инструкция или playbook для LLM-слоя агента: как анализировать задачу, как выбирать tool, когда делать self-check, когда эскалировать человеку. Skill не является источником истины по статусам, правам, контрактам и бизнес-правилам.
 
 ## LangGraph и агентные фреймворки
 
@@ -384,6 +393,7 @@ WarpPort:
 JiraPort:
   MockJiraAdapter
   JiraCloudAdapter
+  JiraMcpAdapter
 
 TracePort:
   FileTraceAdapter
@@ -396,6 +406,7 @@ OrderRepositoryPort:
 ConnectorPort:
   MockConnectorAdapter
   RealConfluenceAdapter
+  ConfluenceMcpAdapter
   RealConfigUpdaterAdapter
   RealDbMigrationAdapter
 ```
@@ -426,6 +437,59 @@ Tools должны:
 - предсказуемо обрабатывать ошибки;
 - не раскрывать секреты в промптах;
 - соблюдать permissions.
+
+Если tool работает через MCP server, он всё равно должен сохранять тот же контракт безопасности:
+
+```text
+LLM reasoning
+  -> typed tool
+    -> port
+      -> MCP adapter
+        -> MCP server
+          -> external system
+```
+
+Пример:
+
+```text
+create_jira_issue
+  -> JiraPort.create_issue(...)
+    -> JiraMcpAdapter
+      -> Jira MCP server
+        -> Jira API
+```
+
+MCP server не должен становиться скрытым обходом permissions, trace, validation или state machine.
+
+## Skills для LLM-агентов
+
+Skills можно использовать как инструкции для LLM-слоя конкретного агента.
+
+Примеры skills для CR Manager:
+
+```text
+skills/
+  remediation.md
+  escalation.md
+  jira_commenting.md
+```
+
+Skill может описывать:
+
+- как читать remediation-инструкции;
+- как выбирать connector;
+- как формулировать комментарий в Jira;
+- когда запускать self-check;
+- когда готовить escalation summary.
+
+Skill не должен:
+
+- менять статус предзаказа;
+- объявлять источник READY;
+- обходить WARP;
+- обходить typed tools;
+- хранить секреты;
+- подменять domain rules или application workflow.
 
 ## Безопасность
 
@@ -749,6 +813,9 @@ src/
           connectors.py
           coordinator_callback.py
           task_repository.py
+        mcp/
+          jira.py
+          confluence.py
         http/
           warp.py
           coordinator_callback.py
@@ -763,6 +830,9 @@ src/
         get_warp_remediation.py
         run_connector.py
         run_warp_self_check.py
+      skills/
+        remediation.md
+        escalation.md
 
     ep_coordinator/
       api/

@@ -28,6 +28,7 @@ Agent = application service + domain logic + ports + adapters + optional LLM rea
 
 ```text
 LLM reasoning layer
+  -> skills / playbooks
   -> typed tools
     -> ports
       -> adapters
@@ -35,6 +36,23 @@ LLM reasoning layer
 ```
 
 LLM не должен напрямую ходить во внешние системы.
+
+MCP servers и skills являются опциональным расширением LLM-агентов.
+
+MCP server — это способ подключить внешний инструмент или систему к LLM/tool execution. В архитектуре проекта MCP должен рассматриваться как реализация adapter или tool backend, а не как замена ports/adapters.
+
+Skill — это инструкция для LLM-слоя агента: как рассуждать, какие шаги соблюдать, когда выбирать tool, когда эскалировать. Skill не является источником истины по статусам, бизнес-правилам, permissions и контрактам.
+
+Правильная модель с MCP:
+
+```text
+LLM reasoning
+  -> typed tool
+    -> port
+      -> MCP adapter
+        -> MCP server
+          -> external system
+```
 
 ## Общие идентификаторы
 
@@ -372,6 +390,31 @@ notify_coordinator
 escalate_to_human
 ```
 
+### Skills
+
+Рекомендуемые skills для LLM-слоя:
+
+```text
+remediation_planning
+jira_commenting
+connector_selection
+escalation_summary
+```
+
+Skills помогают LLM-слою понять, как действовать внутри роли CR Manager, но не заменяют state model, tools и проверки WARP.
+
+### Возможные MCP adapters
+
+CR Manager может использовать MCP как способ подключения внешних систем:
+
+```text
+JiraMcpAdapter
+ConfluenceMcpAdapter
+KnowledgeBaseMcpAdapter
+```
+
+MCP adapters должны вызываться через ports/tools и писать trace так же, как обычные adapters.
+
 ### Требования к ИИ-слою
 
 CR Manager — основной кандидат на LLM-agent.
@@ -539,7 +582,9 @@ ESCALATED
 - выходной контракт;
 - state model;
 - список tools;
+- список skills, если агент использует LLM;
 - список внешних систем;
+- способ подключения внешних систем: HTTP adapter, queue adapter, MCP adapter или другой transport;
 - trace events;
 - retry policy;
 - escalation policy;

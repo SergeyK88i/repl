@@ -107,12 +107,15 @@ src/agents/{agent_name}/
   ports/
   adapters/
   tools/
+  skills/
 ```
 
 Папка `tools/` нужна только тем агентам, у которых есть LLM-слой или планируется LLM-слой.
 
 Например, у CR Manager она нужна почти точно.
 У Coordinator на первом этапе её может не быть, потому что Coordinator лучше держать максимально детерминированным.
+
+Папка `skills/` тоже нужна только LLM-агентам. Она хранит инструкции и playbooks для reasoning-слоя, но не заменяет кодовые правила, state machine и contracts.
 
 ## `api/`
 
@@ -219,6 +222,9 @@ adapters/
     jira.py
     warp.py
     connectors.py
+  mcp/
+    jira.py
+    confluence.py
   http/
     warp.py
     coordinator_callback.py
@@ -231,6 +237,14 @@ adapters/
 Mock adapter используется для POC и тестов.
 
 Real adapter используется для настоящих API.
+
+MCP adapter используется, если внешний инструмент подключён через MCP server. Например:
+
+```text
+JiraPort -> JiraMcpAdapter -> Jira MCP server -> Jira API
+```
+
+Для application-слоя это всё равно обычный adapter за обычным port.
 
 Главное правило:
 
@@ -283,6 +297,56 @@ Tools нужны для безопасности:
 - скрывают детали внешних API;
 - не дают LLM менять состояние напрямую;
 - пишут trace там, где это нужно.
+
+Если tool работает через MCP, цепочка остаётся контролируемой:
+
+```text
+LLM reasoning
+→ typed tool
+→ port
+→ MCP adapter
+→ MCP server
+→ external system
+```
+
+MCP server не должен становиться обходом permissions, validation, trace или state machine.
+
+## `skills/`
+
+`skills` содержит инструкции и playbooks для LLM-слоя агента.
+
+Пример для CR Manager:
+
+```text
+skills/
+  remediation.md
+  escalation.md
+  jira_commenting.md
+```
+
+Skill может объяснять:
+
+- как читать remediation-инструкции WARP;
+- как выбирать connector;
+- как формулировать комментарий в Jira;
+- когда запускать self-check;
+- когда готовить эскалацию человеку.
+
+Skill не должен:
+
+- менять статус предзаказа;
+- объявлять источник READY;
+- обходить WARP;
+- обходить typed tools;
+- хранить секреты;
+- заменять domain rules или application workflow.
+
+Простая формула:
+
+```text
+PROJECT_RULES.md / domain logic = правила системы
+skills/ = инструкции для LLM, как действовать внутри роли
+```
 
 ## `src/shared/`
 
@@ -457,6 +521,15 @@ EpCoordinatorPort -> HttpEpCoordinatorAdapter
 
 Application и domain слои агентов при этом не переписываются.
 
+Если внешняя система подключается через MCP:
+
+```text
+JiraPort -> JiraMcpAdapter -> Jira MCP server
+ConfluencePort -> ConfluenceMcpAdapter -> Confluence MCP server
+```
+
+Для агента это всё равно работа через port. MCP остаётся деталью adapter-слоя.
+
 ## Короткая формула проекта
 
 ```text
@@ -467,6 +540,7 @@ api      = входные endpoints агента
 domain   = бизнес-модель агента
 application = сценарии работы агента
 ports    = интерфейсы наружу
-adapters = mock или real реализации интерфейсов
+adapters = mock, HTTP, queue, MCP или другие реализации интерфейсов
 tools    = безопасные действия для LLM
+skills   = инструкции и playbooks для LLM-агентов
 ```
