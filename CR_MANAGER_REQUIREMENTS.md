@@ -154,13 +154,13 @@ FAILED
 
 CR Manager принял поручение от Coordinator и создал внутреннюю task record.
 
-Это текущий результат `F-002`.
+Это реализовано в `F-002`.
 
 ### `JIRA_CREATED`
 
 CR Manager создал Jira/CR-задачу или нашёл уже существующую задачу по idempotency key.
 
-Добавляется в `F-003`.
+Это реализовано в `F-003`.
 
 ### `REMEDIATION_RECEIVED`
 
@@ -617,16 +617,27 @@ UNKNOWN
 - trace event `cr_task_received`;
 - unit tests.
 
+Реализовано в F-003:
+
+- `JiraPort`;
+- `CreateJiraIssueRequest`;
+- `CreateJiraIssueResult`;
+- `MockJiraAdapter`;
+- idempotency key в `DispatchCrTaskRequest`;
+- автоматическое создание mock Jira/CR при создании task;
+- task status `JIRA_CREATED`;
+- сохранение `jira_issue_id`;
+- сохранение `jira_issue_url`;
+- trace event `jira_issue_created`;
+- idempotency test.
+
 Не реализовано пока:
 
-- JiraPort;
-- MockJiraAdapter;
 - WARP remediation adapter;
 - connector execution;
 - self-check;
 - callback Coordinator;
 - LLM reasoning;
-- idempotency key.
 
 ## Feature mapping
 

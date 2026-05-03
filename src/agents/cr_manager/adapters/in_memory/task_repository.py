@@ -13,6 +13,12 @@ class InMemoryCrManagerTaskRepository:
     async def get(self, task_id: str) -> CrManagerTask | None:
         return self._tasks.get(task_id)
 
+    async def get_by_idempotency_key(self, idempotency_key: str) -> CrManagerTask | None:
+        for task in self._tasks.values():
+            if task.idempotency_key == idempotency_key:
+                return task
+        return None
+
     async def list_by_correlation_id(self, correlation_id: str) -> list[CrManagerTask]:
         return [
             task

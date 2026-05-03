@@ -9,6 +9,7 @@ from agents.coordinator.adapters.in_memory.trace import InMemoryTraceAdapter
 from agents.cr_manager.adapters.in_memory.task_repository import (
     InMemoryCrManagerTaskRepository,
 )
+from agents.cr_manager.adapters.mock.jira import MockJiraAdapter
 from agents.cr_manager.api.routes import create_task, get_task
 from agents.cr_manager.application.service import CrManagerService
 from shared.contracts.tasks import DispatchCrTaskRequest
@@ -32,9 +33,11 @@ class CrManagerRoutesTest(unittest.TestCase):
             )
 
             self.assertTrue(created.task_id.startswith("TASK-"))
-            self.assertEqual(created.status, "RECEIVED")
+            self.assertEqual(created.status, "JIRA_CREATED")
             self.assertEqual(created.order_id, "ORD-ROUTE")
             self.assertEqual(created.failed_criteria, ["C1", "C3.P2"])
+            self.assertIsNotNone(created.jira_issue_id)
+            self.assertIsNotNone(created.jira_issue_url)
 
             fetched = await get_task(created.task_id, cr_manager=service)
             self.assertEqual(fetched.task_id, created.task_id)
@@ -56,6 +59,7 @@ class CrManagerRoutesTest(unittest.TestCase):
 def build_service() -> CrManagerService:
     return CrManagerService(
         tasks=InMemoryCrManagerTaskRepository(),
+        jira=MockJiraAdapter(),
         trace=InMemoryTraceAdapter(),
     )
 

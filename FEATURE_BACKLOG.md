@@ -228,7 +228,7 @@ Acceptance criteria:
 
 ### F-003. Mock Jira Adapter
 
-Статус: `next`
+Статус: `done`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
@@ -245,9 +245,22 @@ Acceptance criteria:
 - CR Manager сохраняет связь task_id -> jira_issue_id;
 - повторный вызов не создаёт дубль при том же idempotency key.
 
+Реализовано сейчас:
+
+- `JiraPort.create_issue`;
+- `CreateJiraIssueRequest`;
+- `CreateJiraIssueResult`;
+- `MockJiraAdapter`;
+- автоматическое создание mock Jira/CR при `POST /cr-manager/task`;
+- статус CR Manager task `JIRA_CREATED`;
+- сохранение `jira_issue_id` и `jira_issue_url`;
+- trace event `jira_issue_created`;
+- idempotency key в `DispatchCrTaskRequest`;
+- повторный `POST /cr-manager/task` с тем же idempotency key возвращает существующую task и не создаёт дубль Jira/CR.
+
 ### F-004. CR Manager Creates Jira/CR From WARP Failed Criteria
 
-Статус: `planned`
+Статус: `next`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
@@ -317,3 +330,174 @@ Acceptance criteria:
 - Coordinator-facing contract не содержит remediation-инструкции;
 - CR Manager-facing remediation contract получает инструкции отдельно;
 - есть contract tests/fixtures.
+
+## FR-4. CR Manager Remediation Orchestration
+
+Статус: `planned`
+
+Roadmap phase: Фаза 4. CR Manager remediation orchestration.
+
+Цель:
+
+```text
+Расширить CR Manager от создания Jira/CR до управляемого исполнения remediation через tools, connectors, self-check и policy.
+```
+
+### F-007. CR Manager Tools, Connectors and Self-check
+
+Статус: `planned`
+
+Roadmap phase: Фаза 4. CR Manager remediation orchestration.
+
+Цель:
+
+```text
+Добавить минимальный tool execution контур CR Manager: получить remediation, выбрать разрешённый connector, выполнить действие, сделать WARP self-check и принять retry/escalation decision по policy.
+```
+
+Acceptance criteria:
+
+- есть typed tools:
+  - `get_warp_remediation`;
+  - `run_connector`;
+  - `run_warp_self_check`;
+  - `complete_jira_issue`;
+  - `notify_coordinator`;
+  - `escalate_to_human`;
+- tools работают через ports/adapters, а не через прямые внешние вызовы;
+- unsafe connector требует policy или human approval;
+- self-check не переводит preorder в `READY`;
+- CR Manager пишет trace events tool execution;
+- tests покрывают happy path, self-check failed и escalation.
+
+### F-008. CR Manager Reasoning Layer
+
+Статус: `planned`
+
+Roadmap phase: Фаза 4. CR Manager remediation orchestration / Фаза 9. ИИ-слой агентов.
+
+Цель:
+
+```text
+Добавить LLM reasoning внутрь CR Manager только после появления Jira/WARP/tools, чтобы LLM планировал remediation и выбирал разрешённые tools, но не управлял критичными статусами напрямую.
+```
+
+Acceptance criteria:
+
+- создан `src/agents/cr_manager/reasoning/`;
+- есть `ContextBuilder`;
+- есть `ReasoningService`;
+- reasoning использует общий `LlmPort`;
+- reasoning возвращает structured result, а не свободный текст;
+- есть `PolicyValidator`;
+- LLM может предложить remediation plan и tool choices;
+- backend выполняет tools и меняет статусы;
+- LLM не может ставить preorder `READY`;
+- LLM не может вызывать Jira/WARP/DB/API напрямую;
+- tests проверяют policy-denied scenarios.
+
+## FR-5. Requirements Agent
+
+Статус: `planned`
+
+Roadmap phase: Фаза 5. Requirements Agent.
+
+Цель:
+
+```text
+Реализовать агента, который проверяет качество пользовательского входа до технической проверки WARP: КЭ, выбранные атрибуты, обязательные поля и согласование с СДО.
+```
+
+### F-009. Requirements Agent Skeleton and Mock Catalogs
+
+Статус: `planned`
+
+Roadmap phase: Фаза 5. Requirements Agent.
+
+Цель:
+
+```text
+Создать модуль Requirements Agent с mock adapters для СДО, каталога источников и каталога атрибутов.
+```
+
+Acceptance criteria:
+
+- создан `src/agents/requirements/`;
+- есть `POST /requirements/check`;
+- есть result model:
+  - `APPROVED`;
+  - `NEEDS_CLARIFICATION`;
+  - `REJECTED`;
+  - `HUMAN_REVIEW_REQUIRED`;
+- mock adapters можно заменить real API;
+- Coordinator сможет поручать проверку через `RequirementsPort`;
+- неполный предзаказ не идёт в WARP.
+
+## FR-6. Trace and Observability Hardening
+
+Статус: `planned`
+
+Roadmap phase: Фаза 6. Trace Collector.
+
+Цель:
+
+```text
+Вынести trace из in-memory adapter в устойчивое хранилище или отдельный Trace Collector и подготовить основу для объяснений/аудита.
+```
+
+### F-010. Trace Storage and Agent Timeline
+
+Статус: `planned`
+
+Roadmap phase: Фаза 6. Trace Collector.
+
+Цель:
+
+```text
+Сделать trace устойчивым и пригодным для восстановления хронологии работы всех агентов по correlation_id.
+```
+
+Acceptance criteria:
+
+- trace events сохраняются не только in-memory;
+- есть единая schema trace event;
+- можно получить timeline по `correlation_id`;
+- каждый агент пишет свои события напрямую;
+- trace содержит task ids, agent_run_id и внешние issue/check ids;
+- tests покрывают восстановление timeline.
+
+## FR-9. Agent Reasoning Experience
+
+Статус: `planned`
+
+Roadmap phase: Фаза 9. ИИ-слой агентов.
+
+Цель:
+
+```text
+Добавить LLM reasoning там, где он даёт ценность пользователю и команде, не ломая deterministic workflow и ownership критичных решений.
+```
+
+### F-011. Coordinator Explanation Reasoning
+
+Статус: `planned`
+
+Roadmap phase: Фаза 9. ИИ-слой агентов.
+
+Цель:
+
+```text
+Добавить LLM reasoning в Coordinator только для объяснений, summary trace, подготовки escalation text и классификации нестандартных ошибок.
+```
+
+Acceptance criteria:
+
+- создан `src/agents/coordinator/reasoning/`;
+- Coordinator reasoning использует общий `LlmPort`;
+- LLM объясняет статус preorder простым языком;
+- LLM делает summary trace;
+- LLM готовит escalation summary;
+- LLM не меняет статус preorder;
+- LLM не вызывает WARP/CR/Jira/EP напрямую;
+- status transitions остаются deterministic;
+- tests проверяют, что reasoning result не может обойти state machine.

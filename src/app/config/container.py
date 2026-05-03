@@ -12,6 +12,7 @@ from agents.coordinator.application.service import CoordinatorService
 from agents.cr_manager.adapters.in_memory.task_repository import (
     InMemoryCrManagerTaskRepository,
 )
+from agents.cr_manager.adapters.mock.jira import MockJiraAdapter
 from agents.cr_manager.application.service import CrManagerService
 from app.config.settings import AdapterProfile, Settings, load_settings
 
@@ -24,11 +25,13 @@ class AppContainer:
         self.cr_manager_tasks = InMemoryCrManagerTaskRepository()
         self.trace = InMemoryTraceAdapter()
         self.llm = self._build_llm()
+        self.jira = self._build_jira()
         self.warp = self._build_warp()
         self.cr_manager = self._build_cr_manager()
         self.replica_init = self._build_replica_init()
         self.cr_manager_service = CrManagerService(
             tasks=self.cr_manager_tasks,
+            jira=self.jira,
             trace=self.trace,
         )
         self.coordinator = CoordinatorService(
@@ -55,6 +58,11 @@ class AppContainer:
         if self.settings.adapter_profile == AdapterProfile.MOCK:
             return MockReplicaInitAdapter()
         raise NotImplementedError("HTTP Replica Init adapter is not implemented yet")
+
+    def _build_jira(self):
+        if self.settings.adapter_profile == AdapterProfile.MOCK:
+            return MockJiraAdapter()
+        raise NotImplementedError("HTTP Jira adapter is not implemented yet")
 
     def _build_llm(self):
         if not self.settings.gigachat_auth_token:

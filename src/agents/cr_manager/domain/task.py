@@ -16,6 +16,7 @@ class CrManagerTask:
     failed_criteria: list[str]
     attempt: int
     action: str
+    idempotency_key: str
     status: CrManagerTaskStatus = CrManagerTaskStatus.RECEIVED
     jira_issue_id: str | None = None
     jira_issue_url: str | None = None

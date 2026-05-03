@@ -26,6 +26,7 @@ class CrManagerTaskResponse(BaseModel):
     failed_criteria: list[str]
     attempt: int
     action: str
+    idempotency_key: str
     jira_issue_id: str | None
     jira_issue_url: str | None
     created_at: datetime
@@ -47,6 +48,7 @@ def to_task_response(task: CrManagerTask) -> CrManagerTaskResponse:
         failed_criteria=task.failed_criteria,
         attempt=task.attempt,
         action=task.action,
+        idempotency_key=task.idempotency_key,
         jira_issue_id=task.jira_issue_id,
         jira_issue_url=task.jira_issue_url,
         created_at=task.created_at,

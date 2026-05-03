@@ -10,6 +10,7 @@ class DispatchCrTaskRequest(BaseModel):
     failed_criteria: list[str]
     attempt: int
     action: str = "remediate"
+    idempotency_key: str | None = None
 
 
 class DispatchCrTaskResult(BaseModel):
@@ -22,4 +23,3 @@ class TaskCompletedRequest(BaseModel):
     status: str
     self_check_passed: bool
     failed_criteria: list[str] = Field(default_factory=list)
-

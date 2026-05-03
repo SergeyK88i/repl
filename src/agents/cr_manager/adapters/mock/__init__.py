@@ -1,0 +1,1 @@
+"""Mock CR Manager adapters."""
