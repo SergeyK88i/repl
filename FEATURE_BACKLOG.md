@@ -224,7 +224,7 @@ Acceptance criteria:
 
 - `ports/jira.py` — в `F-003`;
 - `ports/warp.py` — в `F-004`;
-- `ports/coordinator_callback.py` — в `F-005`.
+- `ports/coordinator_callback.py` — в `F-007`, когда CR Manager начнёт делать self-check и сам сообщать Coordinator результат remediation.
 
 ### F-003. Mock Jira Adapter
 
@@ -305,7 +305,7 @@ Legacy-формат будет удалён отдельной будущей ф
 
 ### F-005. Coordinator Dispatches To Real CR Manager Module
 
-Статус: `next`
+Статус: `done`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
@@ -322,6 +322,16 @@ Acceptance criteria:
 - Coordinator сохраняет task id;
 - дубли callback не ломают состояние;
 - tests покрывают Coordinator -> CR Manager flow.
+
+Реализовано сейчас:
+
+- добавлен `InProcessCrManagerAdapter` в Coordinator module;
+- `AppContainer` больше не использует mock CR Manager adapter как исполнителя поручений;
+- Coordinator при WARP `NOT_READY` передаёт remediation-поручение в реальный `CrManagerService`;
+- CR Manager создаёт внутреннюю task record, получает remediation через mock WARP remediation adapter и создаёт mock Jira/CR;
+- Coordinator сохраняет `task_id`, который вернул CR Manager;
+- trace содержит события Coordinator, WARP и CR Manager в одном `correlation_id`;
+- tests покрывают полный Coordinator -> CR Manager flow.
 
 ### F-012. Remove Legacy Failed Criteria Contract
 
@@ -345,7 +355,7 @@ Acceptance criteria:
 
 ## FR-3. Real WARP Adapter
 
-Статус: `planned`
+Статус: `next`
 
 Roadmap phase: Фаза 3. Реальный WARP adapter.
 
@@ -357,7 +367,7 @@ Roadmap phase: Фаза 3. Реальный WARP adapter.
 
 ### F-006. Real WARP Adapter
 
-Статус: `planned`
+Статус: `next`
 
 Roadmap phase: Фаза 3. Реальный WARP adapter.
 

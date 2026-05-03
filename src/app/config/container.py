@@ -5,7 +5,7 @@ from functools import lru_cache
 from agents.coordinator.adapters.in_memory.order_repository import InMemoryOrderRepository
 from agents.coordinator.adapters.in_memory.task_repository import InMemoryTaskRepository
 from agents.coordinator.adapters.in_memory.trace import InMemoryTraceAdapter
-from agents.coordinator.adapters.mock.cr_manager import MockCrManagerAdapter
+from agents.coordinator.adapters.in_process.cr_manager import InProcessCrManagerAdapter
 from agents.coordinator.adapters.mock.replica_init import MockReplicaInitAdapter
 from agents.coordinator.adapters.mock.warp import MockWarpAdapter
 from agents.coordinator.application.service import CoordinatorService
@@ -29,7 +29,6 @@ class AppContainer:
         self.jira = self._build_jira()
         self.cr_manager_warp = self._build_cr_manager_warp()
         self.warp = self._build_warp()
-        self.cr_manager = self._build_cr_manager()
         self.replica_init = self._build_replica_init()
         self.cr_manager_service = CrManagerService(
             tasks=self.cr_manager_tasks,
@@ -37,6 +36,7 @@ class AppContainer:
             warp=self.cr_manager_warp,
             trace=self.trace,
         )
+        self.cr_manager = self._build_cr_manager()
         self.coordinator = CoordinatorService(
             orders=self.orders,
             tasks=self.tasks,
@@ -54,7 +54,7 @@ class AppContainer:
 
     def _build_cr_manager(self):
         if self.settings.adapter_profile == AdapterProfile.MOCK:
-            return MockCrManagerAdapter(trace=self.trace)
+            return InProcessCrManagerAdapter(self.cr_manager_service)
         raise NotImplementedError("HTTP CR Manager adapter is not implemented yet")
 
     def _build_replica_init(self):

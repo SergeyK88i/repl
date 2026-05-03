@@ -318,15 +318,15 @@
         <span>LLM provider foundation реализован</span>
       </article>
       <article class="metric">
-        <strong>F-002</strong>
-        <span>CR Manager skeleton реализован как отдельный модуль</span>
+        <strong>F-005</strong>
+        <span>Coordinator подключён к реальному модулю CR Manager</span>
       </article>
       <article class="metric">
         <strong>4</strong>
-        <span>ключевые интеграции ещё на mock/in-memory</span>
+        <span>внешние интеграции ещё на mock/in-memory</span>
       </article>
       <article class="metric">
-        <strong>7</strong>
+        <strong>14</strong>
         <span>unit tests проходят в текущем контуре</span>
       </article>
     </section>
@@ -377,16 +377,16 @@
               <tr>
                 <td class="component"><strong>CR Manager</strong><span class="muted">remediation owner</span></td>
                 <td class="wide-cell">Создаёт CR/Jira и организует исправление невыполненных критериев.</td>
-                <td class="wide-cell"><strong>Agent module ready</strong> Есть src/agents/cr_manager, task lifecycle, API, repository, trace.</td>
-                <td class="wide-cell"><strong>F-005</strong> Подключить Coordinator к real CR Manager module вместо mock adapter.</td>
+                <td class="wide-cell"><strong>Connected module</strong> Coordinator передаёт поручения в реальный CrManagerService через in-process adapter.</td>
+                <td class="wide-cell"><strong>F-006/F-007</strong> Реальный WARP adapter, затем tools/connectors и self-check.</td>
                 <td class="wide-cell">Jira, WARP remediation, connectors/subagents.</td>
-                <td class="wide-cell">CR Manager принимает task, создаёт record, возвращает task_id и пишет trace.</td>
+                <td class="wide-cell">CR Manager создаёт Jira/CR, получает remediation и ведёт свой task lifecycle.</td>
               </tr>
               <tr>
                 <td class="component"><strong>Jira / CR</strong><span class="muted">work tracking</span></td>
                 <td class="wide-cell">Фиксирует доработки источника, статусы и комментарии.</td>
                 <td class="wide-cell"><strong>Mock Jira ready</strong> JiraPort + MockJiraAdapter создают predictable issue id/url.</td>
-                <td class="wide-cell"><strong>F-005</strong> Получать поручения от Coordinator через in-process/HTTP adapter.</td>
+                <td class="wide-cell"><strong>After F-006</strong> HTTP Jira adapter и тестовое Jira-пространство.</td>
                 <td class="wide-cell">Jira project, issue type, workflow, service account.</td>
                 <td class="wide-cell">Повторный idempotency key не создаёт дубль задачи.</td>
               </tr>
@@ -402,7 +402,7 @@
                 <td class="component"><strong>LLM / Reasoning</strong><span class="muted">agent thinking</span></td>
                 <td class="wide-cell">Планирует, объясняет, выбирает разрешённые tools.</td>
                 <td class="wide-cell"><strong>GigaChat adapter ready</strong> LlmPort, contracts, token refresh, smoke-test.</td>
-                <td class="wide-cell"><strong>After F-002/F-003</strong> CR Manager ReasoningService + policy validation.</td>
+                <td class="wide-cell"><strong>After F-007</strong> CR Manager ReasoningService + policy validation.</td>
                 <td class="wide-cell">LLM endpoint, cert flow, prompt/skills governance.</td>
                 <td class="wide-cell">LLM не меняет статусы и не вызывает внешние API напрямую.</td>
               </tr>
@@ -417,7 +417,7 @@
         <div class="section">
           <div class="section-title">
             <h2>Feature queue</h2>
-            <span class="pill next">next: F-005</span>
+            <span class="pill next">next: F-006</span>
           </div>
           <div class="feature-list">
             <div class="feature">
@@ -456,7 +456,15 @@
               <div class="code">F-005</div>
               <div>
                 <h3>Coordinator dispatches to CR Manager</h3>
-                <p class="muted">Замена mock CR Manager adapter на in-process/HTTP adapter.</p>
+                <p class="muted">Coordinator передаёт remediation-поручения в реальный CR Manager module через in-process adapter.</p>
+              </div>
+              <span class="pill done">done</span>
+            </div>
+            <div class="feature">
+              <div class="code">F-006</div>
+              <div>
+                <h3>Real WARP Adapter</h3>
+                <p class="muted">HttpWarpAdapter, mapping официального WARP API, fixtures и contract tests.</p>
               </div>
               <span class="pill next">next</span>
             </div>

@@ -60,11 +60,15 @@ GIGACHAT_TIMEOUT_SECONDS=60
 Первый реализованный контур:
 
 - `Coordinator Agent`;
+- `CR Manager Agent` как отдельный модуль;
 - replaceable ports/adapters;
 - mock WARP adapter;
-- mock CR Manager;
+- in-process Coordinator -> CR Manager adapter;
+- mock Jira adapter;
+- mock WARP remediation adapter для CR Manager;
 - mock Replica Init;
 - in-memory order repository;
+- in-memory CR Manager task repository;
 - in-memory trace collector;
 - FastAPI endpoints.
 

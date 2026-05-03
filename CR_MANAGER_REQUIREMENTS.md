@@ -688,6 +688,9 @@ UNKNOWN
 - Jira/CR description с source, preorder/order, load_plan, warp_check_id, failed criteria/params и remediation steps;
 - trace event `remediation_received`;
 - tests для legacy и structured входа.
+- in-process adapter для вызова CR Manager из Coordinator module;
+- Coordinator отправляет remediation-поручение в реальный `CrManagerService`, а не в standalone mock;
+- tests покрывают Coordinator -> CR Manager flow.
 
 Не реализовано пока:
 

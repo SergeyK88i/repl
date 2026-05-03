@@ -6,7 +6,7 @@ import unittest
 from agents.coordinator.adapters.in_memory.order_repository import InMemoryOrderRepository
 from agents.coordinator.adapters.in_memory.task_repository import InMemoryTaskRepository
 from agents.coordinator.adapters.in_memory.trace import InMemoryTraceAdapter
-from agents.coordinator.adapters.mock.cr_manager import MockCrManagerAdapter
+from agents.coordinator.adapters.in_process.cr_manager import InProcessCrManagerAdapter
 from agents.coordinator.adapters.mock.replica_init import MockReplicaInitAdapter
 from agents.coordinator.adapters.mock.warp import MockWarpAdapter
 from agents.coordinator.application.service import (
@@ -15,6 +15,13 @@ from agents.coordinator.application.service import (
     TaskOrderMismatch,
 )
 from agents.coordinator.domain.statuses import OrderStatus
+from agents.cr_manager.adapters.in_memory.task_repository import (
+    InMemoryCrManagerTaskRepository,
+)
+from agents.cr_manager.adapters.mock.jira import MockJiraAdapter
+from agents.cr_manager.adapters.mock.warp import MockWarpRemediationAdapter
+from agents.cr_manager.application.service import CrManagerService
+from agents.cr_manager.domain.statuses import CrManagerTaskStatus
 from shared.contracts.orders import CreateOrderRequest
 from shared.contracts.tasks import TaskCompletedRequest
 
@@ -35,14 +42,18 @@ class CoordinatorServiceTest(unittest.TestCase):
 
     def test_not_ready_source_dispatches_cr_and_then_ready_after_callback(self) -> None:
         async def scenario() -> None:
-            service, cr_manager, replica, trace = build_service()
+            service, cr_manager_tasks, replica, trace = build_service()
             order = await service.create_order(
                 CreateOrderRequest(source_id="SRC-123", request="load replica")
             )
 
             self.assertEqual(order.status, OrderStatus.WAITING_CR)
             self.assertEqual(order.attempts, 1)
-            self.assertEqual(len(cr_manager.dispatched_tasks), 1)
+            cr_task = await cr_manager_tasks.get(order.cr_task_ids[0])
+            self.assertIsNotNone(cr_task)
+            self.assertEqual(cr_task.status, CrManagerTaskStatus.JIRA_CREATED)
+            self.assertIsNotNone(cr_task.jira_issue_id)
+            self.assertIsNotNone(cr_task.jira_issue_url)
 
             order = await service.handle_task_completed(
                 order.order_id,
@@ -131,7 +142,7 @@ class CoordinatorServiceTest(unittest.TestCase):
 
 def build_service() -> tuple[
     CoordinatorService,
-    MockCrManagerAdapter,
+    InMemoryCrManagerTaskRepository,
     MockReplicaInitAdapter,
     InMemoryTraceAdapter,
 ]:
@@ -139,7 +150,14 @@ def build_service() -> tuple[
     tasks = InMemoryTaskRepository()
     trace = InMemoryTraceAdapter()
     warp = MockWarpAdapter(trace=trace)
-    cr_manager = MockCrManagerAdapter(trace=trace)
+    cr_manager_tasks = InMemoryCrManagerTaskRepository()
+    cr_manager_service = CrManagerService(
+        tasks=cr_manager_tasks,
+        jira=MockJiraAdapter(),
+        warp=MockWarpRemediationAdapter(),
+        trace=trace,
+    )
+    cr_manager = InProcessCrManagerAdapter(cr_manager_service)
     replica = MockReplicaInitAdapter()
     service = CoordinatorService(
         orders=orders,
@@ -149,7 +167,7 @@ def build_service() -> tuple[
         cr_manager=cr_manager,
         replica_init=replica,
     )
-    return service, cr_manager, replica, trace
+    return service, cr_manager_tasks, replica, trace
 
 
 if __name__ == "__main__":

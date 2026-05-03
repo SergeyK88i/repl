@@ -336,7 +336,7 @@
       </article>
       <article class="metric">
         <strong>FR-2</strong>
-        <span>начат контур CR Manager и управляемых доработок</span>
+        <span>CR Manager подключён к маршруту Координатора</span>
       </article>
       <article class="metric">
         <strong>FR-3</strong>
@@ -414,7 +414,7 @@
                 </td>
                 <td class="cell-note"><strong>Демо-роль</strong> В сценарии показывает, что источник можно доводить до READY.</td>
                 <td class="cell-note"><strong>LLM-основа</strong> Подготовлен общий LLM provider для будущего reasoning.</td>
-                <td class="cell-note"><strong>Начато</strong> Отдельный агент создан; следующий шаг — Jira/CR и callback Координатору.</td>
+                <td class="cell-note"><strong>Подключён</strong> Координатор уже делегирует задачи в CR Manager; Jira/CR пока работает через mock adapter.</td>
                 <td class="cell-note"><strong>Self-check</strong> Перепроверяет результат через WARP перед отчётом.</td>
                 <td class="cell-note"><span class="pill blue">управляемая remediation</span></td>
               </tr>
@@ -453,7 +453,7 @@
               <div class="decision-number">1</div>
               <div>
                 <h3>Из демонстрации в управляемую CR-доработку</h3>
-                <p class="muted">CR Manager станет отдельным агентом, который принимает поручение, создаёт CR и возвращает результат Координатору.</p>
+                <p class="muted">CR Manager уже подключён как отдельный агентный модуль: принимает поручение Координатора, создаёт CR/Jira в тестовом контуре и ведёт свою задачу.</p>
               </div>
             </article>
             <article class="decision">
