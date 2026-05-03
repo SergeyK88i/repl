@@ -22,6 +22,14 @@ def create_app() -> FastAPI:
     async def console() -> str:
         return (STATIC_DIR / "agent_console.html").read_text(encoding="utf-8")
 
+    @app.get("/internal-delivery-status-2026", response_class=HTMLResponse, include_in_schema=False)
+    async def internal_delivery_status() -> str:
+        return (STATIC_DIR / "product_status_dashboard.html").read_text(encoding="utf-8")
+
+    @app.get("/product", response_class=HTMLResponse, include_in_schema=False)
+    async def product_dashboard() -> str:
+        return (STATIC_DIR / "executive_product_dashboard.html").read_text(encoding="utf-8")
+
     return app
 
 

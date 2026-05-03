@@ -87,6 +87,9 @@ POST /order
 GET  /order/{order_id}
 POST /order/{order_id}/task-completed
 GET  /trace/{correlation_id}
+GET  /console
+GET  /product
+GET  /internal-delivery-status-2026
 ```
 
 ## Пример создания заказа

@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic Data Readiness Product</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f3f1;
+      --panel: #ffffff;
+      --soft: #f8f8f7;
+      --ink: #1f2328;
+      --muted: #66707a;
+      --line: #dededb;
+      --line-strong: #c8c8c2;
+      --black: #111111;
+      --green: #18794e;
+      --blue: #315f9f;
+      --gold: #8a5b00;
+      --red: #9f3a31;
+      --shadow: 0 18px 44px rgba(31, 35, 40, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      width: min(1480px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 24px 0 30px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; letter-spacing: 0; }
+
+    h1 {
+      max-width: 980px;
+      font-size: 40px;
+      line-height: 1.04;
+      font-weight: 760;
+    }
+
+    .lead {
+      max-width: 920px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: var(--black);
+      border-color: var(--black);
+    }
+
+    .button:hover {
+      border-color: var(--line-strong);
+      text-decoration: none;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .section { padding: 18px; }
+    .section + .section { border-top: 1px solid var(--line); }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    h2 { font-size: 17px; line-height: 1.2; }
+    h3 { font-size: 14px; line-height: 1.25; }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 25px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .green { color: var(--green); }
+    .blue { color: var(--blue); }
+    .gold { color: var(--gold); }
+    .red { color: var(--red); }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.32;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+
+    th {
+      background: var(--soft);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .agent-cell {
+      min-width: 190px;
+      background: #fff;
+    }
+
+    .agent-cell strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .cell-note {
+      min-width: 190px;
+      color: var(--muted);
+      line-height: 1.36;
+    }
+
+    .cell-note strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .roadmap-table-wrap {
+      overflow-x: auto;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(380px, 0.7fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .decision-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .decision {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 11px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+    }
+
+    .decision-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--black);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    @media (max-width: 980px) {
+      .topbar {
+        flex-direction: column;
+      }
+
+      .summary,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 { font-size: 31px; }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        width: min(100% - 20px, 1480px);
+        padding-top: 14px;
+      }
+
+      .actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Executive roadmap dashboard</p>
+        <h1>Агентная система подготовки данных: кто и когда становится частью продукта</h1>
+        <p class="lead">
+          Эта витрина показывает развитие продукта через агентные роли. В строках — бизнес-агенты, в столбцах — этапы roadmap. Так видно, что уже можно демонстрировать, что сейчас превращается в рабочий контур и какие интеграции требуют согласования.
+        </p>
+      </div>
+      <nav class="actions" aria-label="Навигация">
+        <a class="button primary" href="/console">Демо сценариев</a>
+        <a class="button" href="https://jira.example/browse/FR-2" target="_blank" rel="noreferrer">Roadmap в Jira</a>
+      </nav>
+    </header>
+
+    <section class="summary">
+      <article class="metric">
+        <strong>FR-0</strong>
+        <span>демонстрационный контур готов для обсуждения и презентации</span>
+      </article>
+      <article class="metric">
+        <strong>FR-1</strong>
+        <span>укрепляем ядро и общую LLM-инфраструктуру</span>
+      </article>
+      <article class="metric">
+        <strong>FR-2</strong>
+        <span>следующий фокус: CR Manager и управляемые доработки</span>
+      </article>
+      <article class="metric">
+        <strong>FR-3</strong>
+        <span>подключение официальной проверки WARP после согласования API</span>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section">
+        <div class="section-title">
+          <h2>Roadmap по агентам</h2>
+          <span class="pill blue">агенты × этапы</span>
+        </div>
+        <div class="roadmap-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Агент / роль</th>
+                <th>FR-0. Концепт</th>
+                <th>FR-1. Основа</th>
+                <th>FR-2. CR и Jira</th>
+                <th>FR-3. WARP API</th>
+                <th>Следующий эффект</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="agent-cell">
+                  <strong>Пользователь</strong>
+                  <span class="muted">инициатор предзаказа</span>
+                </td>
+                <td class="cell-note"><strong>Демо готово</strong> Видит чат и сценарии подготовки источника.</td>
+                <td class="cell-note"><strong>Уточняем вход</strong> Фиксируем обязательные поля предзаказа.</td>
+                <td class="cell-note"><strong>Прозрачность CR</strong> Видит, почему источник не готов и какая доработка нужна.</td>
+                <td class="cell-note"><strong>Официальная проверка</strong> Получает результат готовности из WARP.</td>
+                <td class="cell-note"><span class="pill green">меньше ручных переписок</span></td>
+              </tr>
+              <tr>
+                <td class="agent-cell">
+                  <strong>Координатор</strong>
+                  <span class="muted">центр управления</span>
+                </td>
+                <td class="cell-note"><strong>Рабочий POC</strong> Ведёт статусы, retry, final-check и передачу после READY.</td>
+                <td class="cell-note"><strong>Укрепление ядра</strong> Готовим persistence, idempotency и error model.</td>
+                <td class="cell-note"><strong>Делегирование</strong> Отправляет remediation-поручения в CR Manager.</td>
+                <td class="cell-note"><strong>Официальные решения</strong> Ставит READY только после WARP final-check.</td>
+                <td class="cell-note"><span class="pill blue">единый владелец процесса</span></td>
+              </tr>
+              <tr>
+                <td class="agent-cell">
+                  <strong>Агент требований</strong>
+                  <span class="muted">качество входа</span>
+                </td>
+                <td class="cell-note"><strong>Роль описана</strong> Показан как часть целевого маршрута.</td>
+                <td class="cell-note"><strong>Контракт входа</strong> Уточняем КЭ, атрибуты и правила предзаказа.</td>
+                <td class="cell-note"><strong>Параллельный трек</strong> Можно развивать после стабилизации CR Manager.</td>
+                <td class="cell-note"><strong>До WARP</strong> Не пускает неполный предзаказ в техническую проверку.</td>
+                <td class="cell-note"><span class="pill gold">меньше мусора на входе</span></td>
+              </tr>
+              <tr>
+                <td class="agent-cell">
+                  <strong>WARP</strong>
+                  <span class="muted">готовность источника</span>
+                </td>
+                <td class="cell-note"><strong>Демо-ответы</strong> Показываем READY, NOT_READY и FAILED сценарии.</td>
+                <td class="cell-note"><strong>Контракт</strong> Фиксируем readiness, load_plan, criteria и params.</td>
+                <td class="cell-note"><strong>Инструкции для CR</strong> CR Manager будет получать remediation-контекст.</td>
+                <td class="cell-note"><strong>Реальная интеграция</strong> Подключаем внешний WARP API другой команды.</td>
+                <td class="cell-note"><span class="pill green">100% как рубеж</span></td>
+              </tr>
+              <tr>
+                <td class="agent-cell">
+                  <strong>CR Manager</strong>
+                  <span class="muted">доработки источника</span>
+                </td>
+                <td class="cell-note"><strong>Демо-роль</strong> В сценарии показывает, что источник можно доводить до READY.</td>
+                <td class="cell-note"><strong>LLM-основа</strong> Подготовлен общий LLM provider для будущего reasoning.</td>
+                <td class="cell-note"><strong>Главный фокус</strong> Отдельный агент, Jira/CR, task lifecycle и callback Координатору.</td>
+                <td class="cell-note"><strong>Self-check</strong> Перепроверяет результат через WARP перед отчётом.</td>
+                <td class="cell-note"><span class="pill blue">управляемая remediation</span></td>
+              </tr>
+              <tr>
+                <td class="agent-cell">
+                  <strong>ЕР-Координатор</strong>
+                  <span class="muted">после READY</span>
+                </td>
+                <td class="cell-note"><strong>Рубеж показан</strong> После READY процесс не заканчивается, а переходит в ЕР-контур.</td>
+                <td class="cell-note"><strong>Граница</strong> Уточняем preorder_id и будущий order_id.</td>
+                <td class="cell-note"><strong>Не в фокусе FR-2</strong> Ждёт стабильного READY-потока.</td>
+                <td class="cell-note"><strong>После WARP</strong> Получает только официально готовый источник.</td>
+                <td class="cell-note"><span class="pill gold">старт репликации</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="legend">
+          <span class="pill green">готово к демонстрации</span>
+          <span class="pill blue">в разработке</span>
+          <span class="pill gold">следующий этап</span>
+          <span class="pill red">нужно внешнее согласование</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="panel">
+        <div class="section">
+          <div class="section-title">
+            <h2>Ближайшая управленческая история</h2>
+            <span class="pill gold">FR-2</span>
+          </div>
+          <div class="decision-list">
+            <article class="decision">
+              <div class="decision-number">1</div>
+              <div>
+                <h3>Из демонстрации в управляемую CR-доработку</h3>
+                <p class="muted">CR Manager станет отдельным агентом, который принимает поручение, создаёт CR и возвращает результат Координатору.</p>
+              </div>
+            </article>
+            <article class="decision">
+              <div class="decision-number">2</div>
+              <div>
+                <h3>Jira как видимый след работы</h3>
+                <p class="muted">Каждая доработка будет иметь понятную задачу, статус, владельца, комментарии и ссылку.</p>
+              </div>
+            </article>
+            <article class="decision">
+              <div class="decision-number">3</div>
+              <div>
+                <h3>Человек остаётся в контуре контроля</h3>
+                <p class="muted">Агенты берут рутину, но сложные конфликты и рискованные решения уходят на эскалацию человеку.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="section">
+          <div class="section-title">
+            <h2>Что нужно согласовать</h2>
+            <span class="pill red">решения</span>
+          </div>
+          <div class="decision-list">
+            <article class="decision">
+              <div class="decision-number">A</div>
+              <div>
+                <h3>Тестовое Jira-пространство</h3>
+                <p class="muted">Куда CR Manager будет создавать первые задачи.</p>
+              </div>
+            </article>
+            <article class="decision">
+              <div class="decision-number">B</div>
+              <div>
+                <h3>WARP contract</h3>
+                <p class="muted">Формат readiness, failed criteria, params, load_plan и remediation-инструкций.</p>
+              </div>
+            </article>
+            <article class="decision">
+              <div class="decision-number">C</div>
+              <div>
+                <h3>Пилотные источники</h3>
+                <p class="muted">Набор источников, на которых можно довести продукт до тестовой эксплуатации.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

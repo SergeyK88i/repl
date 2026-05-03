@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Internal Delivery Status</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f3f1;
+      --panel: #ffffff;
+      --soft: #f8f8f7;
+      --ink: #1f2328;
+      --muted: #687078;
+      --line: #dededb;
+      --line-strong: #c8c8c2;
+      --black: #111111;
+      --done: #18794e;
+      --progress: #8a5b00;
+      --next: #315f9f;
+      --planned: #6f757c;
+      --blocked: #9f3a31;
+      --shadow: 0 18px 44px rgba(31, 35, 40, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      width: min(1500px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3, p { margin: 0; letter-spacing: 0; }
+
+    h1 {
+      font-size: 25px;
+      line-height: 1.12;
+    }
+
+    .subtitle {
+      max-width: 900px;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.38;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .button:hover {
+      border-color: var(--line-strong);
+      text-decoration: none;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .section { padding: 18px; }
+    .section + .section { border-top: 1px solid var(--line); }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    h2 { font-size: 16px; line-height: 1.2; }
+    h3 { font-size: 14px; line-height: 1.25; }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .done { color: var(--done); }
+    .progress { color: var(--progress); }
+    .next { color: var(--next); }
+    .planned { color: var(--planned); }
+    .blocked { color: var(--blocked); }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 11px;
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+
+    th {
+      background: var(--soft);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    .wide-cell {
+      min-width: 210px;
+      line-height: 1.36;
+    }
+
+    .wide-cell strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .component {
+      min-width: 170px;
+      background: #fff;
+    }
+
+    .component strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(390px, 0.75fr);
+      gap: 16px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: 86px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+    }
+
+    .code {
+      font-weight: 760;
+      font-size: 13px;
+    }
+
+    .note {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+    }
+
+    .note + .note { margin-top: 9px; }
+
+    @media (max-width: 1180px) {
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1500px);
+        padding-top: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .nav {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .summary,
+      .feature {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Internal Delivery Status</h1>
+        <p class="subtitle">
+          Внутренняя витрина для команды и ближайшего руководства. Здесь показываем реальную delivery-картину: что готово, где mock, какая фича следующая, какой контракт или внешний контур нужен.
+        </p>
+      </div>
+      <nav class="nav" aria-label="Навигация">
+        <a class="button" href="/product">Executive view</a>
+        <a class="button" href="/console">Agent console</a>
+      </nav>
+    </header>
+
+    <section class="summary">
+      <article class="metric">
+        <strong>FR-0</strong>
+        <span>POC и презентационная демонстрация готовы</span>
+      </article>
+      <article class="metric">
+        <strong>F-001</strong>
+        <span>LLM provider foundation реализован</span>
+      </article>
+      <article class="metric">
+        <strong>F-002</strong>
+        <span>следующая фича: CR Manager skeleton</span>
+      </article>
+      <article class="metric">
+        <strong>4</strong>
+        <span>ключевые интеграции ещё на mock/in-memory</span>
+      </article>
+      <article class="metric">
+        <strong>7</strong>
+        <span>unit tests проходят в текущем контуре</span>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section">
+        <div class="section-title">
+          <h2>Delivery matrix</h2>
+          <span class="pill progress">честная инженерная карта</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Компонент</th>
+                <th>Бизнес-роль</th>
+                <th>Сейчас</th>
+                <th>Следующая фича</th>
+                <th>Нужный внешний контур</th>
+                <th>Definition of done</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="component"><strong>Coordinator</strong><span class="muted">preorder owner</span></td>
+                <td class="wide-cell">Ведёт статус предзаказа, маршрутизирует задачи, делает final-check.</td>
+                <td class="wide-cell"><strong>Real application service</strong> Есть state machine, retry, idempotent callback, trace.</td>
+                <td class="wide-cell"><strong>FR-1 follow-up</strong> PostgreSQL, migrations, idempotency keys, error model.</td>
+                <td class="wide-cell">PostgreSQL, observability storage.</td>
+                <td class="wide-cell">Предзаказы переживают рестарт, статусы меняются только через state machine.</td>
+              </tr>
+              <tr>
+                <td class="component"><strong>Requirements Agent</strong><span class="muted">input quality</span></td>
+                <td class="wide-cell">Проверяет КЭ, атрибуты и согласование с СДО.</td>
+                <td class="wide-cell"><strong>Target role documented</strong> В маршруте есть, но реализация отложена.</td>
+                <td class="wide-cell"><strong>FR-5</strong> Requirements module, SDO/catalog adapters, clarification flow.</td>
+                <td class="wide-cell">СДО, каталог источников, каталог атрибутов.</td>
+                <td class="wide-cell">Неполный предзаказ не попадает в WARP.</td>
+              </tr>
+              <tr>
+                <td class="component"><strong>WARP</strong><span class="muted">readiness authority</span></td>
+                <td class="wide-cell">Официально подтверждает готовность источника.</td>
+                <td class="wide-cell"><strong>Mock adapter</strong> READY, NOT_READY и FAILED сценарии работают для демо.</td>
+                <td class="wide-cell"><strong>F-006</strong> HttpWarpAdapter, response mapping, fixtures, contract tests.</td>
+                <td class="wide-cell">WARP API другой команды.</td>
+                <td class="wide-cell">Coordinator-facing contract без remediation-инструкций; CR Manager-facing remediation отдельно.</td>
+              </tr>
+              <tr>
+                <td class="component"><strong>CR Manager</strong><span class="muted">remediation owner</span></td>
+                <td class="wide-cell">Создаёт CR/Jira и организует исправление невыполненных критериев.</td>
+                <td class="wide-cell"><strong>Mock adapter</strong> Coordinator пока видит CR Manager как заменяемый порт.</td>
+                <td class="wide-cell"><strong>F-002</strong> src/agents/cr_manager, task lifecycle, API, repository, trace.</td>
+                <td class="wide-cell">Jira, WARP remediation, connectors/subagents.</td>
+                <td class="wide-cell">CR Manager принимает task, создаёт record, возвращает task_id и пишет trace.</td>
+              </tr>
+              <tr>
+                <td class="component"><strong>Jira / CR</strong><span class="muted">work tracking</span></td>
+                <td class="wide-cell">Фиксирует доработки источника, статусы и комментарии.</td>
+                <td class="wide-cell"><strong>Not connected</strong> В dashboard стоят placeholder-ссылки.</td>
+                <td class="wide-cell"><strong>F-003</strong> JiraPort + MockJiraAdapter, затем real Jira adapter.</td>
+                <td class="wide-cell">Jira project, issue type, workflow, service account.</td>
+                <td class="wide-cell">Повторный idempotency key не создаёт дубль задачи.</td>
+              </tr>
+              <tr>
+                <td class="component"><strong>EP Coordinator</strong><span class="muted">after READY</span></td>
+                <td class="wide-cell">Создаёт заказ и готовит параметры реплики после READY.</td>
+                <td class="wide-cell"><strong>Mock replica init</strong> Показывает рубеж после READY.</td>
+                <td class="wide-cell"><strong>FR-7</strong> EP order contract, config generation, loader handoff.</td>
+                <td class="wide-cell">ЕР/Jira контур, loader API, config validation.</td>
+                <td class="wide-cell">ЕР-заказ создаётся только из READY-предзаказа.</td>
+              </tr>
+              <tr>
+                <td class="component"><strong>LLM / Reasoning</strong><span class="muted">agent thinking</span></td>
+                <td class="wide-cell">Планирует, объясняет, выбирает разрешённые tools.</td>
+                <td class="wide-cell"><strong>GigaChat adapter ready</strong> LlmPort, contracts, token refresh, smoke-test.</td>
+                <td class="wide-cell"><strong>After F-002/F-003</strong> CR Manager ReasoningService + policy validation.</td>
+                <td class="wide-cell">LLM endpoint, cert flow, prompt/skills governance.</td>
+                <td class="wide-cell">LLM не меняет статусы и не вызывает внешние API напрямую.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="panel">
+        <div class="section">
+          <div class="section-title">
+            <h2>Feature queue</h2>
+            <span class="pill next">next: F-002</span>
+          </div>
+          <div class="feature-list">
+            <div class="feature">
+              <div class="code">F-001</div>
+              <div>
+                <h3>LLM Provider Foundation</h3>
+                <p class="muted">Общий LLM порт, GigaChat adapter, env, tests и smoke-test.</p>
+              </div>
+              <span class="pill done">done</span>
+            </div>
+            <div class="feature">
+              <div class="code">F-002</div>
+              <div>
+                <h3>CR Manager Agent Skeleton</h3>
+                <p class="muted">Первый настоящий модуль CR Manager с task lifecycle.</p>
+              </div>
+              <span class="pill next">next</span>
+            </div>
+            <div class="feature">
+              <div class="code">F-003</div>
+              <div>
+                <h3>Mock Jira Adapter</h3>
+                <p class="muted">JiraPort, mock issue id/url, idempotency.</p>
+              </div>
+              <span class="pill planned">planned</span>
+            </div>
+            <div class="feature">
+              <div class="code">F-004</div>
+              <div>
+                <h3>Create Jira/CR from WARP criteria</h3>
+                <p class="muted">Описание CR с criteria, params, load_plan и remediation instructions.</p>
+              </div>
+              <span class="pill planned">planned</span>
+            </div>
+            <div class="feature">
+              <div class="code">F-005</div>
+              <div>
+                <h3>Coordinator dispatches to CR Manager</h3>
+                <p class="muted">Замена mock CR Manager adapter на in-process/HTTP adapter.</p>
+              </div>
+              <span class="pill planned">planned</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="section">
+          <div class="section-title">
+            <h2>Open decisions</h2>
+            <span class="pill blocked">needed</span>
+          </div>
+          <div class="note">
+            <h3>Jira contract</h3>
+            <p class="muted">Project key, issue type, workflow statuses, service account, fields for source_id, load_plan, criteria and params.</p>
+          </div>
+          <div class="note">
+            <h3>WARP contract</h3>
+            <p class="muted">Final format of readiness response, remediation response, warp_check_id, audit_hash and load_plan behavior.</p>
+          </div>
+          <div class="note">
+            <h3>Pilot sources</h3>
+            <p class="muted">Small source list for testing the product flow without broad rollout risk.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
