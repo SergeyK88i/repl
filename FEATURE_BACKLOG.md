@@ -422,6 +422,9 @@ Acceptance criteria:
 - tools работают через ports/adapters, а не через прямые внешние вызовы;
 - unsafe connector требует policy или human approval;
 - self-check не переводит preorder в `READY`;
+- partial self-check фиксируется в Jira/CR comment и trace: что исправлено, что осталось, какой следующий шаг;
+- CR Manager не отправляет успешный callback Coordinator при частичном прогрессе;
+- Coordinator получает только финальный outcome CR Manager task, без промежуточных partial updates;
 - CR Manager пишет trace events tool execution;
 - tests покрывают happy path, self-check failed и escalation.
 

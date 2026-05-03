@@ -378,8 +378,30 @@ Coordinator не запрашивает remediation-инструкции.
 Если WARP self-check возвращает `NOT_READY`, CR Manager:
 
 1. сохраняет оставшиеся failed criteria/params;
-2. решает retry или escalation по policy;
-3. не сообщает Coordinator, что источник READY.
+2. вычисляет, какие criteria/params были исправлены относительно предыдущей проверки;
+3. добавляет комментарий в Jira/CR с результатом self-check:
+   - что исправлено;
+   - что осталось исправить;
+   - текущий WARP score/status;
+   - следующий шаг: retry, продолжение remediation или escalation;
+4. пишет trace event `self_check_failed` или `remediation_progress_updated`;
+5. решает retry или escalation по policy;
+6. не сообщает Coordinator, что источник READY.
+
+Частичный прогресс не считается успешным завершением remediation-задачи.
+Если было 5 невыполненных criteria/params, а после self-check осталось 2, источник всё ещё `NOT_READY`.
+CR Manager фиксирует прогресс в Jira/CR и trace, но не отправляет Coordinator успешный `task-completed`.
+
+Для MVP Coordinator не получает промежуточные partial updates от CR Manager.
+Coordinator интересует только финальный outcome remediation-задачи:
+
+- `done` + `self_check_passed=true` — можно запускать WARP official final-check;
+- `failed` или `escalated` + `self_check_passed=false` — Coordinator решает retry или переводит предзаказ в `FAILED`.
+
+Coordinator получает callback только в двух случаях:
+
+1. remediation-задача завершена успешно, WARP self-check вернул `READY`;
+2. remediation-задача окончательно не может быть выполнена и требует retry/escalation на уровне Coordinator.
 
 ## Callback Coordinator
 
