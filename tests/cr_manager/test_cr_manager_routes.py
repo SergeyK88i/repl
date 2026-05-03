@@ -10,6 +10,7 @@ from agents.cr_manager.adapters.in_memory.task_repository import (
     InMemoryCrManagerTaskRepository,
 )
 from agents.cr_manager.adapters.mock.jira import MockJiraAdapter
+from agents.cr_manager.adapters.mock.warp import MockWarpRemediationAdapter
 from agents.cr_manager.api.routes import create_task, get_task
 from agents.cr_manager.application.service import CrManagerService
 from shared.contracts.tasks import DispatchCrTaskRequest
@@ -38,6 +39,9 @@ class CrManagerRoutesTest(unittest.TestCase):
             self.assertEqual(created.failed_criteria, ["C1", "C3.P2"])
             self.assertIsNotNone(created.jira_issue_id)
             self.assertIsNotNone(created.jira_issue_url)
+            self.assertIsNotNone(created.jira_summary)
+            self.assertIsNotNone(created.jira_description)
+            self.assertEqual(len(created.remediation_items), 2)
 
             fetched = await get_task(created.task_id, cr_manager=service)
             self.assertEqual(fetched.task_id, created.task_id)
@@ -60,6 +64,7 @@ def build_service() -> CrManagerService:
     return CrManagerService(
         tasks=InMemoryCrManagerTaskRepository(),
         jira=MockJiraAdapter(),
+        warp=MockWarpRemediationAdapter(),
         trace=InMemoryTraceAdapter(),
     )
 

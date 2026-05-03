@@ -29,6 +29,9 @@ class CrManagerTaskResponse(BaseModel):
     idempotency_key: str
     jira_issue_id: str | None
     jira_issue_url: str | None
+    jira_summary: str | None
+    jira_description: str | None
+    remediation_items: list[dict]
     created_at: datetime
     updated_at: datetime
 
@@ -51,6 +54,9 @@ def to_task_response(task: CrManagerTask) -> CrManagerTaskResponse:
         idempotency_key=task.idempotency_key,
         jira_issue_id=task.jira_issue_id,
         jira_issue_url=task.jira_issue_url,
+        jira_summary=task.jira_summary,
+        jira_description=task.jira_description,
+        remediation_items=task.remediation_items,
         created_at=task.created_at,
         updated_at=task.updated_at,
     )

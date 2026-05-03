@@ -20,6 +20,8 @@ class MockJiraAdapter:
             return CreateJiraIssueResult(
                 issue_id=existing.issue_id,
                 issue_url=existing.issue_url,
+                summary=existing.summary,
+                description=existing.description,
                 created=False,
             )
 
@@ -27,6 +29,8 @@ class MockJiraAdapter:
         result = CreateJiraIssueResult(
             issue_id=issue_id,
             issue_url=f"{self.base_url}/{issue_id}",
+            summary=request.summary,
+            description=request.description,
             created=True,
         )
         self._issues_by_key[request.idempotency_key] = result

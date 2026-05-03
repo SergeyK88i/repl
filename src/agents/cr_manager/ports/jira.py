@@ -11,7 +11,13 @@ class CreateJiraIssueRequest:
     order_id: str
     source_id: str
     correlation_id: str
+    summary: str
+    description: str
     failed_criteria: list[str]
+    failed_items: list[dict]
+    remediation_items: list[dict]
+    load_plan: str | None
+    warp_check_id: str | None
     attempt: int
     action: str
 
@@ -20,6 +26,8 @@ class CreateJiraIssueRequest:
 class CreateJiraIssueResult:
     issue_id: str
     issue_url: str
+    summary: str
+    description: str
     created: bool
 
 

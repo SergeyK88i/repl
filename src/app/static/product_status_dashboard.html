@@ -378,7 +378,7 @@
                 <td class="component"><strong>CR Manager</strong><span class="muted">remediation owner</span></td>
                 <td class="wide-cell">Создаёт CR/Jira и организует исправление невыполненных критериев.</td>
                 <td class="wide-cell"><strong>Agent module ready</strong> Есть src/agents/cr_manager, task lifecycle, API, repository, trace.</td>
-                <td class="wide-cell"><strong>F-004</strong> Добавить WARP criteria, params и remediation-инструкции в Jira/CR.</td>
+                <td class="wide-cell"><strong>F-005</strong> Подключить Coordinator к real CR Manager module вместо mock adapter.</td>
                 <td class="wide-cell">Jira, WARP remediation, connectors/subagents.</td>
                 <td class="wide-cell">CR Manager принимает task, создаёт record, возвращает task_id и пишет trace.</td>
               </tr>
@@ -386,7 +386,7 @@
                 <td class="component"><strong>Jira / CR</strong><span class="muted">work tracking</span></td>
                 <td class="wide-cell">Фиксирует доработки источника, статусы и комментарии.</td>
                 <td class="wide-cell"><strong>Mock Jira ready</strong> JiraPort + MockJiraAdapter создают predictable issue id/url.</td>
-                <td class="wide-cell"><strong>F-004</strong> Наполнить CR/Jira содержанием из WARP failed criteria/remediation.</td>
+                <td class="wide-cell"><strong>F-005</strong> Получать поручения от Coordinator через in-process/HTTP adapter.</td>
                 <td class="wide-cell">Jira project, issue type, workflow, service account.</td>
                 <td class="wide-cell">Повторный idempotency key не создаёт дубль задачи.</td>
               </tr>
@@ -417,7 +417,7 @@
         <div class="section">
           <div class="section-title">
             <h2>Feature queue</h2>
-            <span class="pill next">next: F-004</span>
+            <span class="pill next">next: F-005</span>
           </div>
           <div class="feature-list">
             <div class="feature">
@@ -450,7 +450,7 @@
                 <h3>Create Jira/CR from WARP criteria</h3>
                 <p class="muted">Описание CR с criteria, params, load_plan и remediation instructions.</p>
               </div>
-              <span class="pill next">next</span>
+              <span class="pill done">done</span>
             </div>
             <div class="feature">
               <div class="code">F-005</div>
@@ -458,7 +458,7 @@
                 <h3>Coordinator dispatches to CR Manager</h3>
                 <p class="muted">Замена mock CR Manager adapter на in-process/HTTP adapter.</p>
               </div>
-              <span class="pill planned">planned</span>
+              <span class="pill next">next</span>
             </div>
           </div>
         </div>

@@ -260,7 +260,7 @@ Acceptance criteria:
 
 ### F-004. CR Manager Creates Jira/CR From WARP Failed Criteria
 
-Статус: `next`
+Статус: `done`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 
@@ -287,9 +287,25 @@ Migration note:
 Legacy-формат будет удалён отдельной будущей фичей после перехода Coordinator и WARP adapter на structured failed_items.
 ```
 
+Реализовано сейчас:
+
+- расширен `DispatchCrTaskRequest`:
+  - `failed_items`;
+  - `load_plan`;
+  - `warp_check_id`;
+- legacy `failed_criteria: list[str]` сохранён;
+- добавлен `WarpRemediationPort`;
+- добавлен `MockWarpRemediationAdapter`;
+- CR Manager запрашивает remediation перед созданием Jira/CR;
+- task сохраняет `remediation_items`;
+- Mock Jira сохраняет `summary` и `description`;
+- Jira/CR description содержит источник, предзаказ, load_plan, warp_check_id, failed criteria/params и remediation steps;
+- trace содержит `remediation_received` и `jira_issue_created`;
+- tests покрывают legacy и structured вход.
+
 ### F-005. Coordinator Dispatches To Real CR Manager Module
 
-Статус: `planned`
+Статус: `next`
 
 Roadmap phase: Фаза 2. CR Manager Agent и Jira.
 

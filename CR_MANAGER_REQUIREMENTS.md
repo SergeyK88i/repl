@@ -209,7 +209,7 @@ CR Manager создал Jira/CR-задачу или нашёл уже сущес
 
 CR Manager получил от WARP remediation-инструкции по критериям и параметрам.
 
-Добавляется в `F-004`.
+Это реализовано в `F-004` через `MockWarpRemediationAdapter`.
 
 ### `EXECUTING`
 
@@ -674,9 +674,23 @@ UNKNOWN
 - trace event `jira_issue_created`;
 - idempotency test.
 
+Реализовано в F-004:
+
+- `failed_items` в `DispatchCrTaskRequest`;
+- optional `load_plan`;
+- optional `warp_check_id`;
+- legacy `failed_criteria: list[str]` оставлен для совместимости;
+- `WarpRemediationPort`;
+- `MockWarpRemediationAdapter`;
+- `remediation_items` в task;
+- `jira_summary`;
+- `jira_description`;
+- Jira/CR description с source, preorder/order, load_plan, warp_check_id, failed criteria/params и remediation steps;
+- trace event `remediation_received`;
+- tests для legacy и structured входа.
+
 Не реализовано пока:
 
-- WARP remediation adapter;
 - connector execution;
 - self-check;
 - callback Coordinator;
