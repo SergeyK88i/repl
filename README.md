@@ -2,11 +2,40 @@
 
 Production-shaped POC системы ИИ-агентов для подготовки источника данных к созданию реплики.
 
+## Документы проекта
+
+Основные md-файлы и их назначение:
+
+| Файл | Для чего нужен |
+| --- | --- |
+| `PROJECT_RULES.md` | Главные правила реализации: Python, ports/adapters, границы агентов, LLM/tools/MCP/skills, state machine, trace, idempotency. |
+| `ARCHITECTURE_GUIDE.md` | Человеческая карта архитектуры: зачем нужны `app`, `agents`, `shared`, что лежит внутри агента, чем tool отличается от adapter. |
+| `AGENT_REQUIREMENTS.md` | Требования к агентам: роли, входы/выходы, state model, tools, LLM reasoning matrix, ограничения. |
+| `WARP_INTEGRATION_REQUIREMENTS.md` | Контрактная модель интеграции с внешним WARP: readiness, remediation, `load_plan`, `warp_check_id`, критерии и параметры. |
+| `SCENARIOS.md` | Бизнес-сценарии и объяснение текущего POC API. |
+| `ROADMAP.md` | План развития от POC на заглушках до test/prod-ready агентной системы. |
+| `MANAGEMENT_PRESENTATION_NOTES.md` | Бизнес-описание для руководства без лишней технической детализации. |
+| `WORK_DONE.md` | История уже выполненной работы. |
+
+Если документы расходятся, приоритет такой:
+
+```text
+PROJECT_RULES.md
+→ ARCHITECTURE_GUIDE.md
+→ AGENT_REQUIREMENTS.md
+→ WARP_INTEGRATION_REQUIREMENTS.md
+→ ROADMAP.md
+→ SCENARIOS.md
+→ MANAGEMENT_PRESENTATION_NOTES.md
+```
+
+WARP в production является внешним сервисом другой команды. В нашем проекте для WARP остаются contracts, `WarpPort`, mock adapter для POC и HTTP adapter для real API.
+
 Первый реализованный контур:
 
 - `Coordinator Agent`;
 - replaceable ports/adapters;
-- mock WARP;
+- mock WARP adapter;
 - mock CR Manager;
 - mock Replica Init;
 - in-memory order repository;
@@ -43,4 +72,3 @@ GET  /trace/{correlation_id}
   "request": "загрузить реплику"
 }
 ```
-
