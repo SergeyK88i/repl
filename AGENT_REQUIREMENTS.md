@@ -104,21 +104,249 @@ escalation_requested
 
 Trace-события должны быть append-only.
 
-## Матрица LLM reasoning по агентам
+## LLM reasoning по агентам
 
-Эта таблица фиксирует, где в системе нужен LLM reasoning, а где агент должен оставаться преимущественно детерминированным.
+Этот раздел фиксирует, где в системе нужен LLM reasoning, а где агент должен оставаться преимущественно детерминированным.
 
 Главное правило: LLM может предлагать намерения, планы, объяснения и выбор разрешённых tools. Критичные статусы, финальные решения готовности, права, idempotency и внешние вызовы контролирует backend-система.
 
-| Агент | Нужен ли LLM | Что делает LLM | Что делает система | Доступные tools | Что LLM запрещено |
-| --- | --- | --- | --- | --- | --- |
-| Coordinator | Позже, минимально | Объясняет статус предзаказа пользователю; делает summary trace; готовит текст эскалации; помогает классифицировать нестандартную ошибку | Создаёт `DRAFT`; меняет статусы; вызывает Requirements Agent, WARP, CR Manager и ЕР-Координатор; контролирует retry; ставит `READY` только после WARP final-check | `explain_preorder_status`, `summarize_trace`, `prepare_escalation_summary`, `classify_error` | Менять статус; ставить `READY`; обходить WARP; создавать Jira/CR; запускать ЕР-заказ без READY; менять retry/idempotency rules |
-| Requirements Agent | Да, один из первых | Понимает свободный текст пользователя; извлекает КЭ источника; понимает выбранные атрибуты; находит недостающие данные; формулирует уточняющие вопросы; объясняет причину отказа или human review | Проверяет КЭ через СДО/каталог; валидирует обязательные поля; проверяет атрибутный состав; решает, можно ли вернуть `APPROVED`; сохраняет результат и trace | `check_source_ke`, `validate_attributes`, `ask_sdo`, `build_clarification_questions`, `summarize_requirements_result` | Подтверждать предзаказ без СДО/каталогов; менять статус предзаказа напрямую; проверять readiness вместо WARP; создавать CR; запускать ЕР-фазу |
-| WARP | Обычно нет | Не требуется для базовой архитектуры. Позже LLM может помогать объяснять критерии простым языком, но не считать readiness | Оценивает готовность источника; возвращает `READY`/`NOT_READY`; считает score; возвращает failed criteria; выдаёт remediation-инструкции; формирует audit hash | `explain_failed_criteria` как необязательный read-only tool | Менять статус предзаказа; создавать CR; исправлять источник; объявлять readiness без правил WARP; подменять score |
-| CR Manager | Да, основной LLM-агент | Анализирует remediation-инструкции; предлагает план исправлений; выбирает разрешённые connectors/tools; готовит комментарии в Jira; решает, нужен retry или escalation в рамках policy; готовит escalation summary | Создаёт Jira/CR через tool; вызывает WARP remediation; запускает connectors; делает self-check; сохраняет task state; отправляет callback Coordinator; контролирует idempotency | `create_jira_issue`, `get_warp_remediation`, `run_connector`, `run_warp_self_check`, `complete_jira_issue`, `notify_coordinator`, `escalate_to_human` | Ставить предзаказу `READY`; обходить WARP; считать self-check успешным без WARP; напрямую вызывать API без tools; скрывать ошибки connector; создавать дубли Jira/CR |
-| EP Coordinator | Да, но позже | Помогает подобрать параметры реплики; объясняет выбранную конфигурацию; находит конфликт параметров; готовит комментарии в ЕР/Jira; предлагает escalation при конфликте | Создаёт заказ в ЕР/Jira-контуре; валидирует конфиг; запускает loader; контролирует статусы ЕР-фазы; сохраняет trace | `create_ep_order`, `select_replica_parameters`, `generate_ep_config`, `validate_ep_config`, `handoff_to_loader`, `prepare_ep_escalation` | Стартовать до `READY`; создавать заказ без входного READY-предзаказа; применять невалидный конфиг; обходить approvals; менять статусы предзаказа |
-| Init Loader | Скорее нет в MVP | Позже может объяснять ошибки загрузки и предлагать retry/escalation summary | Запускает загрузку; проверяет прогресс; делает retry по правилам; пишет trace; сообщает результат дальше | `start_initial_load`, `check_load_status`, `prepare_load_failure_summary` | Самостоятельно менять бизнес-статус заказа; скрывать ошибки загрузки; повторять unsafe operations без разрешения |
-| Publisher | Скорее нет в MVP | Позже может объяснять результат публикации и готовить пользовательское summary | Проверяет результат загрузки; публикует реплику; фиксирует финальный статус; отправляет уведомления | `validate_loaded_replica`, `publish_replica`, `notify_publication_result` | Публиковать без успешной загрузки; обходить финальные проверки; менять исходные статусы предзаказа |
+### Coordinator
+
+Нужен ли LLM: позже, минимально.
+
+Что делает LLM:
+
+- объясняет статус предзаказа пользователю;
+- делает summary trace;
+- готовит текст эскалации;
+- помогает классифицировать нестандартную ошибку.
+
+Что делает система:
+
+- создаёт `DRAFT`;
+- меняет статусы;
+- вызывает Requirements Agent, WARP, CR Manager и ЕР-Координатор;
+- контролирует retry;
+- ставит `READY` только после WARP final-check.
+
+Доступные tools:
+
+- `explain_preorder_status`;
+- `summarize_trace`;
+- `prepare_escalation_summary`;
+- `classify_error`.
+
+Что LLM запрещено:
+
+- менять статус;
+- ставить `READY`;
+- обходить WARP;
+- создавать Jira/CR;
+- запускать ЕР-заказ без READY;
+- менять retry/idempotency rules.
+
+### Requirements Agent
+
+Нужен ли LLM: да, один из первых.
+
+Что делает LLM:
+
+- понимает свободный текст пользователя;
+- извлекает КЭ источника;
+- понимает выбранные атрибуты;
+- находит недостающие данные;
+- формулирует уточняющие вопросы;
+- объясняет причину отказа или human review.
+
+Что делает система:
+
+- проверяет КЭ через СДО/каталог;
+- валидирует обязательные поля;
+- проверяет атрибутный состав;
+- решает, можно ли вернуть `APPROVED`;
+- сохраняет результат и trace.
+
+Доступные tools:
+
+- `check_source_ke`;
+- `validate_attributes`;
+- `ask_sdo`;
+- `build_clarification_questions`;
+- `summarize_requirements_result`.
+
+Что LLM запрещено:
+
+- подтверждать предзаказ без СДО/каталогов;
+- менять статус предзаказа напрямую;
+- проверять readiness вместо WARP;
+- создавать CR;
+- запускать ЕР-фазу.
+
+### WARP Integration
+
+Нужен ли LLM: обычно нет.
+
+Что делает LLM:
+
+- не требуется для базовой архитектуры;
+- позже может помогать объяснять критерии простым языком, но не считать readiness.
+
+Что делает система:
+
+- оценивает готовность источника;
+- возвращает `READY` или `NOT_READY`;
+- считает score;
+- возвращает failed criteria;
+- выдаёт remediation-инструкции;
+- формирует audit hash.
+
+Доступные tools:
+
+- `explain_failed_criteria` как необязательный read-only tool.
+
+Что LLM запрещено:
+
+- менять статус предзаказа;
+- создавать CR;
+- исправлять источник;
+- объявлять readiness без правил WARP;
+- подменять score.
+
+### CR Manager
+
+Нужен ли LLM: да, основной LLM-агент.
+
+Что делает LLM:
+
+- анализирует remediation-инструкции;
+- предлагает план исправлений;
+- выбирает разрешённые connectors/tools;
+- готовит комментарии в Jira;
+- решает, нужен retry или escalation в рамках policy;
+- готовит escalation summary.
+
+Что делает система:
+
+- создаёт Jira/CR через tool;
+- вызывает WARP remediation;
+- запускает connectors;
+- делает self-check;
+- сохраняет task state;
+- отправляет callback Coordinator;
+- контролирует idempotency.
+
+Доступные tools:
+
+- `create_jira_issue`;
+- `get_warp_remediation`;
+- `run_connector`;
+- `run_warp_self_check`;
+- `complete_jira_issue`;
+- `notify_coordinator`;
+- `escalate_to_human`.
+
+Что LLM запрещено:
+
+- ставить предзаказу `READY`;
+- обходить WARP;
+- считать self-check успешным без WARP;
+- напрямую вызывать API без tools;
+- скрывать ошибки connector;
+- создавать дубли Jira/CR.
+
+### EP Coordinator
+
+Нужен ли LLM: да, но позже.
+
+Что делает LLM:
+
+- помогает подобрать параметры реплики;
+- объясняет выбранную конфигурацию;
+- находит конфликт параметров;
+- готовит комментарии в ЕР/Jira;
+- предлагает escalation при конфликте.
+
+Что делает система:
+
+- создаёт заказ в ЕР/Jira-контуре;
+- валидирует конфиг;
+- запускает loader;
+- контролирует статусы ЕР-фазы;
+- сохраняет trace.
+
+Доступные tools:
+
+- `create_ep_order`;
+- `select_replica_parameters`;
+- `generate_ep_config`;
+- `validate_ep_config`;
+- `handoff_to_loader`;
+- `prepare_ep_escalation`.
+
+Что LLM запрещено:
+
+- стартовать до `READY`;
+- создавать заказ без входного READY-предзаказа;
+- применять невалидный конфиг;
+- обходить approvals;
+- менять статусы предзаказа.
+
+### Init Loader
+
+Нужен ли LLM: скорее нет в MVP.
+
+Что делает LLM:
+
+- позже может объяснять ошибки загрузки;
+- может предлагать retry/escalation summary.
+
+Что делает система:
+
+- запускает загрузку;
+- проверяет прогресс;
+- делает retry по правилам;
+- пишет trace;
+- сообщает результат дальше.
+
+Доступные tools:
+
+- `start_initial_load`;
+- `check_load_status`;
+- `prepare_load_failure_summary`.
+
+Что LLM запрещено:
+
+- самостоятельно менять бизнес-статус заказа;
+- скрывать ошибки загрузки;
+- повторять unsafe operations без разрешения.
+
+### Publisher
+
+Нужен ли LLM: скорее нет в MVP.
+
+Что делает LLM:
+
+- позже может объяснять результат публикации;
+- может готовить пользовательское summary.
+
+Что делает система:
+
+- проверяет результат загрузки;
+- публикует реплику;
+- фиксирует финальный статус;
+- отправляет уведомления.
+
+Доступные tools:
+
+- `validate_loaded_replica`;
+- `publish_replica`;
+- `notify_publication_result`.
+
+Что LLM запрещено:
+
+- публиковать без успешной загрузки;
+- обходить финальные проверки;
+- менять исходные статусы предзаказа.
 
 ## Общий шаблон reasoning для LLM-агента
 
@@ -160,6 +388,179 @@ Application service должен проверить этот результат:
 - результат можно записать в trace.
 
 Только после этого tools могут быть выполнены.
+
+## Реализация reasoning-слоя
+
+Для MVP reasoning реализуем без обязательного LangGraph.
+
+Базовая production-friendly схема:
+
+```text
+ApplicationService
+  -> ContextBuilder
+  -> ReasoningService
+  -> StructuredReasoningResult
+  -> PolicyValidator
+  -> ToolExecutor
+```
+
+`ReasoningService` может быть реализован через обычный LLM client с structured output.
+
+LLM provider подключается через общий порт:
+
+```text
+ReasoningService
+  -> LlmPort
+    -> GigaChatAdapter
+      -> GigaChat API
+```
+
+`GigaChatAdapter` не хранит историю диалога и не принимает решений за агента. Он отвечает только за token management, HTTP-вызов, chat completions, embeddings и mapping ответа провайдера в наши контракты.
+
+LangGraph можно добавить позже только внутри конкретного агента, если простого `ReasoningService` станет мало.
+
+### Где лежит reasoning
+
+У LLM-агента появляется папка:
+
+```text
+src/agents/{agent_name}/reasoning/
+  service.py
+  prompts.py
+  schemas.py
+  policy.py
+  context_builder.py
+  memory.py
+```
+
+### Что делает reasoning
+
+Reasoning может:
+
+- понять задачу;
+- выбрать intent;
+- предложить план;
+- выбрать tools из разрешённого списка;
+- сформировать объяснение;
+- предложить human escalation.
+
+Reasoning не может:
+
+- выполнять tools напрямую;
+- менять статусы;
+- писать в repositories;
+- вызывать adapters;
+- обходить permissions;
+- считать prompt history источником истины.
+
+### Reasoning endpoints
+
+Публичные endpoint-ы агентов не должны называться reasoning endpoint-ами.
+
+Правильно:
+
+```text
+POST /requirements/check
+POST /cr-manager/task
+POST /ep-coordinator/task
+```
+
+Reasoning вызывается внутри application service.
+
+Для разработки и диагностики допускаются внутренние preview endpoint-ы:
+
+```text
+POST /internal/requirements/reasoning/preview
+POST /internal/cr-manager/reasoning/preview
+```
+
+Ограничения preview endpoint-ов:
+
+- не выполняют tools;
+- не меняют состояние;
+- требуют авторизацию;
+- не доступны публично;
+- возвращают только proposed reasoning result;
+- пишут audit/trace.
+
+### Контекст и память
+
+Reasoning получает только минимальный достаточный контекст.
+
+Типы памяти:
+
+#### Execution context
+
+Обязательные идентификаторы текущего выполнения:
+
+```text
+correlation_id
+agent_run_id
+preorder_id или order_id
+task_id
+source_id
+load_plan
+attempt
+current_status
+```
+
+#### Short-term memory
+
+Память текущего agent run:
+
+- proposed plan;
+- выполненные tool calls;
+- результаты tools;
+- ошибки текущей попытки;
+- промежуточные summaries.
+
+Хранится в устойчивом состоянии:
+
+```text
+agent_runs
+agent_run_steps
+tool_executions
+```
+
+#### Long-term memory
+
+Память между задачами:
+
+- runbooks;
+- remediation patterns;
+- knowledge base;
+- статистика успешности connectors;
+- типовые escalation summaries.
+
+Long-term memory может помогать reasoning, но не является authority.
+
+#### Conversation memory
+
+История общения с пользователем.
+
+Используется для уточнений и объяснений, но не для смены статусов, READY, WARP, СДО или Jira.
+
+### Что отправляем в LLM
+
+Можно отправлять:
+
+- роль агента;
+- цель текущего шага;
+- execution context без секретов;
+- текущий статус;
+- краткий trace summary;
+- read-only результаты tools;
+- список разрешённых tools;
+- policy constraints.
+
+Нельзя отправлять:
+
+- tokens;
+- credentials;
+- секреты;
+- лишние персональные данные;
+- полный trace, если достаточно summary;
+- внутренние данные других агентов без необходимости.
 
 ## Coordinator Agent
 
@@ -654,6 +1055,555 @@ PUBLISHED
 PUBLICATION_FAILED
 ESCALATED
 ```
+
+## Каталог планируемых tools
+
+Tools — это разрешённые действия, которые может вызвать LLM-слой агента.
+
+Tool не должен напрямую содержать бизнес-оркестрацию всего агента. Он выполняет одно понятное действие, валидирует вход, вызывает нужный port и возвращает структурированный результат.
+
+Правильная цепочка:
+
+```text
+LLM reasoning
+  -> typed tool
+    -> port
+      -> adapter
+        -> external system
+```
+
+### Coordinator tools
+
+Coordinator остаётся преимущественно детерминированным. Его tools в MVP не обязательны и могут появиться позже для объяснений и эскалаций.
+
+#### `explain_preorder_status`
+
+Назначение: объяснить пользователю текущий статус предзаказа простым языком.
+
+Использует:
+
+- `OrderRepositoryPort`;
+- `TracePort`.
+
+Вход:
+
+```json
+{
+  "preorder_id": "PRE-123",
+  "correlation_id": "CORR-001"
+}
+```
+
+Выход:
+
+```json
+{
+  "status": "WAITING_CR",
+  "explanation": "Источник пока не готов. CR Manager закрывает критерии C1/P1 и C1/P5."
+}
+```
+
+Ограничение: tool не меняет статус и не запускает новые действия.
+
+#### `summarize_trace`
+
+Назначение: собрать краткую историю процесса по `correlation_id`.
+
+Использует:
+
+- `TracePort`.
+
+Выход:
+
+```json
+{
+  "summary": "Предзаказ создан, требования подтверждены, WARP вернул NOT_READY, CR Manager получил remediation-задачу.",
+  "events_count": 12
+}
+```
+
+#### `prepare_escalation_summary`
+
+Назначение: подготовить понятное описание проблемы для человека.
+
+Использует:
+
+- `OrderRepositoryPort`;
+- `TaskRepositoryPort`;
+- `TracePort`.
+
+Выход:
+
+```json
+{
+  "reason": "validation_retry_limit_exceeded",
+  "summary": "После трёх попыток источник CM12345 всё ещё не прошёл WARP final-check.",
+  "failed_criteria": ["C1/P5"],
+  "trace_ref": "CORR-001"
+}
+```
+
+#### `classify_error`
+
+Назначение: помочь классифицировать нестандартную ошибку для маршрутизации или эскалации.
+
+Выход:
+
+```json
+{
+  "error_type": "retryable_external_timeout",
+  "recommended_action": "retry",
+  "requires_human": false
+}
+```
+
+Ограничение: финальное решение о retry/escalation принимает application workflow.
+
+### Requirements Agent tools
+
+#### `check_source_ke`
+
+Назначение: проверить, что КЭ источника существует и может использоваться в предзаказе.
+
+Использует:
+
+- `SourceCatalogPort`;
+- возможно `SdoPort`.
+
+Вход:
+
+```json
+{
+  "source_ke": "CM12345",
+  "correlation_id": "CORR-001"
+}
+```
+
+Выход:
+
+```json
+{
+  "exists": true,
+  "source_id": "CM12345",
+  "source_name": "Customer Accounts",
+  "allowed": true
+}
+```
+
+#### `validate_attributes`
+
+Назначение: проверить выбранный пользователем атрибутный состав.
+
+Использует:
+
+- `AttributeCatalogPort`;
+- `SourceCatalogPort`.
+
+Вход:
+
+```json
+{
+  "source_id": "CM12345",
+  "attributes": ["client_id", "account_num", "balance"]
+}
+```
+
+Выход:
+
+```json
+{
+  "valid": true,
+  "missing_attributes": [],
+  "unknown_attributes": [],
+  "normalized_attributes": ["client_id", "account_num", "balance"]
+}
+```
+
+#### `ask_sdo`
+
+Назначение: согласовать предзаказ или проверить ограничения через СДО.
+
+Использует:
+
+- `SdoPort`.
+
+Вход:
+
+```json
+{
+  "source_id": "CM12345",
+  "attributes": ["client_id", "account_num", "balance"],
+  "request_text": "Нужна реплика по клиентским счетам"
+}
+```
+
+Выход:
+
+```json
+{
+  "approved": true,
+  "decision_id": "SDO-DECISION-123",
+  "comments": []
+}
+```
+
+#### `build_clarification_questions`
+
+Назначение: сформировать уточняющие вопросы пользователю, если вход неполный.
+
+Вход:
+
+```json
+{
+  "missing_fields": ["source_ke", "attributes"],
+  "invalid_fields": []
+}
+```
+
+Выход:
+
+```json
+{
+  "questions": [
+    "Укажите КЭ источника, например CM12345.",
+    "Какие атрибуты нужно включить в предзаказ?"
+  ]
+}
+```
+
+#### `summarize_requirements_result`
+
+Назначение: объяснить результат проверки требований простым языком.
+
+Выход:
+
+```json
+{
+  "result": "APPROVED",
+  "summary": "КЭ источника найден, атрибуты корректны, СДО подтвердило предзаказ."
+}
+```
+
+### CR Manager tools
+
+#### `create_jira_issue`
+
+Назначение: создать Jira/CR-задачу на remediation.
+
+Использует:
+
+- `JiraPort`.
+
+Вход:
+
+```json
+{
+  "preorder_id": "PRE-123",
+  "source_id": "CM12345",
+  "load_plan": "PLAN_A",
+  "warp_check_id": "WARP-CHECK-123",
+  "failed_items": [
+    {
+      "criteria_id": "C1",
+      "param_id": "P1",
+      "title": "Не заполнено описание",
+      "instructions": ["Открыть карточку источника", "Заполнить описание"]
+    }
+  ]
+}
+```
+
+Выход:
+
+```json
+{
+  "jira_issue_id": "TASK-123",
+  "jira_url": "https://jira.example/browse/TASK-123",
+  "created": true
+}
+```
+
+Ограничение: tool должен быть идемпотентным и не создавать дубли при повторном вызове.
+
+#### `get_warp_remediation`
+
+Назначение: получить у WARP инструкции по исправлению критериев и параметров.
+
+Использует:
+
+- `WarpPort`.
+
+Вход:
+
+```json
+{
+  "source_id": "CM12345",
+  "load_plan": "PLAN_A",
+  "warp_check_id": "WARP-CHECK-123",
+  "criteria_params": [
+    {
+      "criteria_id": "C1",
+      "param_ids": ["P1", "P5"]
+    }
+  ]
+}
+```
+
+Выход:
+
+```json
+{
+  "items": [
+    {
+      "criteria_id": "C1",
+      "param_id": "P1",
+      "title": "Заполнить описание источника",
+      "steps": ["Открыть карточку источника", "Заполнить описание", "Сохранить"],
+      "recommended_connector": "source_catalog",
+      "automation_possible": false
+    }
+  ]
+}
+```
+
+#### `run_connector`
+
+Назначение: выполнить разрешённый connector для remediation.
+
+Использует:
+
+- `ConnectorPort`;
+- конкретный adapter или MCP adapter.
+
+Вход:
+
+```json
+{
+  "connector": "config_updater",
+  "criteria_id": "C3",
+  "param_id": "P2",
+  "params": {
+    "source_id": "CM12345"
+  }
+}
+```
+
+Выход:
+
+```json
+{
+  "status": "SUCCEEDED",
+  "execution_id": "CONN-RUN-123",
+  "details": {}
+}
+```
+
+Ограничение: unsafe connectors должны требовать отдельного разрешения или human approval.
+
+#### `run_warp_self_check`
+
+Назначение: проверить результат remediation через WARP.
+
+Использует:
+
+- `WarpPort`.
+
+Вход:
+
+```json
+{
+  "source_id": "CM12345",
+  "load_plan": "PLAN_A",
+  "context": "self_check",
+  "criteria_params": [
+    {
+      "criteria_id": "C1",
+      "param_ids": ["P1", "P5"]
+    }
+  ]
+}
+```
+
+Выход:
+
+```json
+{
+  "status": "READY",
+  "score": {
+    "current": 100,
+    "required": 100
+  },
+  "failed_criteria": []
+}
+```
+
+Ограничение: self-check не переводит предзаказ в READY.
+
+#### `complete_jira_issue`
+
+Назначение: закрыть или обновить Jira/CR после успешного self-check.
+
+Использует:
+
+- `JiraPort`.
+
+Выход:
+
+```json
+{
+  "jira_issue_id": "TASK-123",
+  "status": "DONE"
+}
+```
+
+#### `notify_coordinator`
+
+Назначение: отправить callback Coordinator о результате remediation-задачи.
+
+Использует:
+
+- `CoordinatorCallbackPort`.
+
+Выход:
+
+```json
+{
+  "accepted": true,
+  "coordinator_status": "VALIDATING"
+}
+```
+
+#### `escalate_to_human`
+
+Назначение: передать человеку remediation-задачу с контекстом, если агент не может продолжить.
+
+Использует:
+
+- `EscalationPort` или `NotificationPort`;
+- возможно `JiraPort`.
+
+Выход:
+
+```json
+{
+  "escalation_id": "ESC-123",
+  "notified": true
+}
+```
+
+### EP Coordinator tools
+
+#### `create_ep_order`
+
+Назначение: создать заказ в ЕР/Jira-контуре после READY.
+
+Использует:
+
+- `JiraPort`;
+- `EpOrderPort`.
+
+Ограничение: tool может быть вызван только для READY-предзаказа.
+
+#### `select_replica_parameters`
+
+Назначение: подобрать параметры реплики.
+
+Использует:
+
+- `ReplicaParameterPort`;
+- возможно LLM reasoning для анализа конфликта параметров.
+
+#### `generate_ep_config`
+
+Назначение: сформировать конфиг для ЕР.
+
+Использует:
+
+- `EpConfigPort`.
+
+Ограничение: результат должен пройти validation.
+
+#### `validate_ep_config`
+
+Назначение: проверить конфиг перед передачей дальше.
+
+Использует:
+
+- `EpConfigPort`;
+- validation rules.
+
+#### `handoff_to_loader`
+
+Назначение: передать готовый конфиг Init Loader.
+
+Использует:
+
+- `LoaderPort`.
+
+#### `prepare_ep_escalation`
+
+Назначение: подготовить контекст эскалации по ЕР-фазе.
+
+Использует:
+
+- `TracePort`;
+- `EpTaskRepositoryPort`;
+
+### Init Loader tools
+
+#### `start_initial_load`
+
+Назначение: запустить первичную загрузку реплики.
+
+Использует:
+
+- `LoaderPort`.
+
+#### `check_load_status`
+
+Назначение: проверить состояние загрузки.
+
+Использует:
+
+- `LoaderPort`.
+
+#### `prepare_load_failure_summary`
+
+Назначение: подготовить summary ошибки загрузки для человека или следующего агента.
+
+Использует:
+
+- `TracePort`;
+- `LoaderPort`.
+
+### Publisher tools
+
+#### `validate_loaded_replica`
+
+Назначение: проверить результат загрузки перед публикацией.
+
+Использует:
+
+- `PublisherPort`;
+- validation rules.
+
+#### `publish_replica`
+
+Назначение: опубликовать реплику.
+
+Использует:
+
+- `PublisherPort`.
+
+Ограничение: tool нельзя вызывать без успешной загрузки и финальной проверки.
+
+#### `notify_publication_result`
+
+Назначение: уведомить пользователя или downstream-системы о результате публикации.
+
+Использует:
+
+- `NotificationPort`.
 
 ## Требования к безопасности
 

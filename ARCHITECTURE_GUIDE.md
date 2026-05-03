@@ -108,6 +108,7 @@ src/agents/{agent_name}/
   domain/
   ports/
   adapters/
+  reasoning/
   tools/
   skills/
 ```
@@ -118,6 +119,8 @@ src/agents/{agent_name}/
 У Coordinator на первом этапе её может не быть, потому что Coordinator лучше держать максимально детерминированным.
 
 Папка `skills/` тоже нужна только LLM-агентам. Она хранит инструкции и playbooks для reasoning-слоя, но не заменяет кодовые правила, state machine и contracts.
+
+Папка `reasoning/` нужна только агентам, у которых есть LLM-слой. Она содержит код, который готовит контекст для LLM, вызывает LLM provider, валидирует структурированный ответ и возвращает application service проверяемый план.
 
 ## `api/`
 
@@ -156,6 +159,114 @@ GET  /cr-manager/task/{task_id}
 ```
 
 Этот слой знает бизнес-сценарий, но не знает деталей конкретной Jira, HTTP-клиента, Postgres или внешнего API.
+
+## `reasoning/`
+
+`reasoning` содержит LLM-слой агента.
+
+Эта папка нужна не каждому агенту. Она появляется только там, где LLM реально помогает:
+
+- Requirements Agent;
+- CR Manager;
+- позже EP Coordinator;
+- возможно Coordinator только для объяснений и summary.
+
+Пример структуры:
+
+```text
+reasoning/
+  service.py
+  prompts.py
+  schemas.py
+  policy.py
+  context_builder.py
+  memory.py
+```
+
+`service.py` вызывает LLM provider и возвращает структурированный результат.
+
+`prompts.py` собирает system/developer/user messages.
+
+`schemas.py` описывает Pydantic-схемы ответа LLM.
+
+`policy.py` содержит ограничения: какие intents и tools разрешены в текущей роли.
+
+`context_builder.py` собирает минимальный контекст для LLM из application state, trace и внешних read-only источников.
+
+`memory.py` описывает доступ к памяти агента, если агенту нужна краткосрочная или долгосрочная память.
+
+Reasoning-слой не должен:
+
+- менять статус;
+- писать напрямую в БД;
+- напрямую ходить во внешние API;
+- выполнять tools в обход application service;
+- хранить prompt memory как источник истины.
+
+Правильная цепочка:
+
+```text
+application service
+→ context_builder собирает контекст
+→ reasoning service получает structured plan от LLM
+→ application service проверяет plan
+→ tools выполняют разрешённые действия
+→ state machine контролирует статус
+→ trace фиксирует результат
+```
+
+### Нужен ли LangGraph
+
+Для MVP LangGraph не нужен как обязательная зависимость.
+
+Начальный production-friendly вариант проще:
+
+```text
+ReasoningService
+→ structured output schema
+→ policy validation
+→ tool execution через application service
+```
+
+LangGraph можно добавить позже внутри конкретного агента, если появятся реальные причины:
+
+- многошаговое планирование;
+- сложное ветвление;
+- циклы tool-use;
+- параллельные ветки reasoning;
+- human-in-the-loop внутри одного агента;
+- необходимость сохранять граф выполнения.
+
+Даже если LangGraph будет добавлен, он должен жить внутри `reasoning/` или `application/agent.py` конкретного агента и не становиться фундаментом всей системы.
+
+### Reasoning endpoints
+
+Reasoning не должен быть публичным бизнес-endpoint по умолчанию.
+
+Основные endpoint-ы остаются агентными:
+
+```text
+POST /requirements/check
+POST /cr-manager/task
+POST /ep-coordinator/task
+```
+
+Внутри этих endpoint-ов application service может вызвать reasoning.
+
+Для отладки можно добавить внутренние admin/debug endpoint-ы:
+
+```text
+POST /internal/requirements/reasoning/preview
+POST /internal/cr-manager/reasoning/preview
+```
+
+Они должны:
+
+- быть выключены в production или закрыты авторизацией;
+- не выполнять tools;
+- возвращать только proposed plan;
+- писать audit/trace;
+- не менять состояние.
 
 ## `domain/`
 
@@ -482,6 +593,123 @@ PROJECT_RULES.md / domain logic = правила системы
 skills/ = инструкции для LLM, как действовать внутри роли
 ```
 
+## Память и контекст LLM-агентов
+
+Prompt history не является памятью системы.
+
+Для production нужно разделять несколько типов контекста.
+
+### Execution context
+
+Контекст одного запуска агента.
+
+Обязательные поля:
+
+```text
+correlation_id
+agent_run_id
+preorder_id или order_id
+task_id
+source_id
+load_plan, если применимо
+attempt
+current_status
+```
+
+Execution context передаётся во все tools, trace-события и внешние вызовы.
+
+### Short-term memory
+
+Краткосрочная память внутри одного agent run.
+
+Примеры:
+
+- промежуточный план CR Manager;
+- выбранные tools;
+- результаты уже выполненных tools;
+- ошибки текущей попытки;
+- reasoning summary текущего шага.
+
+Где хранить:
+
+```text
+agent_runs
+agent_run_steps
+tool_executions
+```
+
+Short-term memory должна переживать retry и рестарт процесса, если agent run уже начался.
+
+### Long-term memory
+
+Долгосрочная память между разными задачами.
+
+Примеры:
+
+- успешные remediation-паттерны;
+- типовые причины эскалации;
+- runbooks;
+- knowledge base;
+- статистика connector success/failure;
+- предпочтения по планам загрузки, если они подтверждены правилами.
+
+Где хранить:
+
+```text
+knowledge_base
+remediation_patterns
+agent_learnings
+vector_index, если понадобится semantic search
+```
+
+Long-term memory нельзя использовать как единственный источник истины.
+
+Если память говорит “обычно это чинится так”, агент всё равно должен проверить:
+
+- текущий WARP response;
+- permissions;
+- актуальные contracts;
+- state machine;
+- результат tools.
+
+### Conversation memory
+
+История общения с пользователем.
+
+Используется для:
+
+- уточняющих вопросов;
+- объяснения статуса;
+- восстановления контекста диалога.
+
+Не используется для:
+
+- смены статусов;
+- подтверждения READY;
+- обхода СДО/WARP/Jira;
+- хранения секретов.
+
+### Что отправлять в LLM
+
+В LLM нужно отправлять минимальный достаточный контекст:
+
+- роль агента;
+- цель текущего шага;
+- execution context без секретов;
+- текущий статус;
+- релевантные trace summary;
+- результаты read-only tools;
+- список разрешённых tools;
+- ограничения policy.
+
+Не отправляем:
+
+- service tokens;
+- raw credentials;
+- лишние персональные данные;
+- полный trace, если достаточно summary;
+- внутренние данные других агентов без необходимости.
+
 ## `src/shared/`
 
 `shared` содержит только то, что действительно общее для нескольких агентов.
@@ -493,6 +721,7 @@ src/shared/
   contracts/
   domain/
   ports/
+  adapters/
   telemetry/
   security/
 ```
@@ -557,6 +786,40 @@ ports/
 ```
 
 Trace нужен всем агентам, поэтому общий контракт trace можно держать в `shared`.
+
+## `shared/adapters/`
+
+Общие adapter-ы для инфраструктурных провайдеров, которые могут использовать несколько агентов.
+
+Пример:
+
+```text
+adapters/
+  llm/
+    gigachat.py
+```
+
+LLM provider не должен жить внутри конкретного агента, если им могут пользоваться Requirements Agent, CR Manager и EP Coordinator.
+
+Текущая модель:
+
+```text
+ReasoningService
+→ LlmPort
+→ GigaChatAdapter
+→ GigaChat API
+```
+
+GigaChat adapter отвечает только за транспорт:
+
+- OAuth token;
+- refresh token on 401;
+- chat completions;
+- embeddings;
+- TLS/certificate settings;
+- mapping provider response в `LlmChatResponse`.
+
+Он не хранит conversation history и не управляет памятью агента. Память собирается в `reasoning/context_builder.py` и `reasoning/memory.py`.
 
 ## `shared/telemetry/`
 

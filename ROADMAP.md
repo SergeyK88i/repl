@@ -90,7 +90,96 @@
 - Все действия пишут trace.
 - Есть тесты на основные переходы и ошибки.
 
-## Фаза 2. Requirements Agent
+## Фаза 2. CR Manager Agent и Jira
+
+### Цель
+
+Реализовать CR Manager как отдельный агентный модуль, который получает remediation-поручение от Coordinator, создаёт Jira/CR и готовит основу для дальнейшей оркестрации исправлений.
+
+### Работы
+
+- Создать `src/agents/cr_manager/`.
+- Реализовать API:
+  - `POST /cr-manager/task`;
+  - `GET /cr-manager/task/{task_id}`.
+- Добавить task lifecycle:
+  - `RECEIVED`;
+  - `JIRA_CREATED`;
+  - `REMEDIATION_RECEIVED`;
+  - `EXECUTING`;
+  - `SELF_CHECKING`;
+  - `DONE`;
+  - `FAILED`;
+  - `ESCALATED`.
+- Реализовать Jira adapter:
+  - сначала mock;
+  - затем real Jira adapter.
+- Реализовать WARP remediation adapter.
+- Реализовать создание Jira/CR с критериями, параметрами и инструкциями WARP.
+- Добавить callback в Coordinator.
+- Зафиксировать правило: Coordinator только поручает remediation, а Jira/CR создаёт CR Manager.
+
+### Критерии готовности
+
+- Coordinator создаёт remediation-поручение при WARP `NOT_READY`.
+- CR Manager принимает задачу от Coordinator.
+- CR Manager создаёт Jira/CR.
+- CR Manager получает remediation-инструкции от WARP или mock WARP.
+- CR Manager сообщает Coordinator результат.
+- Все действия пишут trace.
+
+## Фаза 3. Реальный WARP adapter
+
+### Цель
+
+Заменить `MockWarpAdapter` на реальную интеграцию с WARP.
+
+### Работы
+
+- Зафиксировать финальный контракт WARP:
+  - readiness request;
+  - readiness response;
+  - score;
+  - failed criteria;
+  - audit hash;
+  - remediation request;
+  - remediation response.
+- Реализовать `HttpWarpAdapter`.
+- Добавить обработку timeout/retry.
+- Добавить mapping внешнего WARP-контракта во внутренние Pydantic-модели.
+- Добавить contract tests.
+- Добавить mock server или recorded fixtures для тестов.
+
+### Критерии готовности
+
+- Координатор может выполнять initial-check и final-check через настоящий WARP API.
+- Формат WARP можно менять внутри adapter без переписывания Координатора.
+- Ошибки WARP корректно классифицируются.
+
+## Фаза 4. CR Manager remediation orchestration
+
+### Цель
+
+Расширить CR Manager от создания Jira/CR до реального исполнения remediation через tools/connectors/subagents.
+
+### Работы
+
+- Реализовать connector registry:
+  - Confluence connector;
+  - config-updater connector;
+  - db-migration connector.
+- Добавить self-check через WARP.
+- Добавить retry/escalation policy.
+- Добавить LLM reasoning для планирования remediation, когда появятся реальные инструкции и tools.
+
+### Критерии готовности
+
+- Выполняет mock/real коннекторы.
+- Делает self-check.
+- Делает retry или escalation по policy.
+- Пишет детальные trace-события tool execution.
+
+## Фаза 5. Requirements Agent
 
 ### Цель
 
@@ -126,79 +215,7 @@
 - Если данных не хватает, система возвращает пользователю понятные уточнения.
 - Mock-адаптеры можно заменить реальными API СДО и каталогов без переписывания workflow.
 
-## Фаза 3. Реальный WARP adapter
-
-### Цель
-
-Заменить `MockWarpAdapter` на реальную интеграцию с WARP.
-
-### Работы
-
-- Зафиксировать финальный контракт WARP:
-  - readiness request;
-  - readiness response;
-  - score;
-  - failed criteria;
-  - audit hash;
-  - remediation request;
-  - remediation response.
-- Реализовать `HttpWarpAdapter`.
-- Добавить обработку timeout/retry.
-- Добавить mapping внешнего WARP-контракта во внутренние Pydantic-модели.
-- Добавить contract tests.
-- Добавить mock server или recorded fixtures для тестов.
-
-### Критерии готовности
-
-- Координатор может выполнять initial-check и final-check через настоящий WARP API.
-- Формат WARP можно менять внутри adapter без переписывания Координатора.
-- Ошибки WARP корректно классифицируются.
-
-## Фаза 4. CR Manager Agent
-
-### Цель
-
-Реализовать CR Manager как отдельный агентный модуль.
-
-### Работы
-
-- Создать `src/agents/cr_manager/`.
-- Реализовать API:
-  - `POST /cr-manager/task`;
-  - получение статуса задачи;
-  - callback/эскалация.
-- Добавить task lifecycle:
-  - `RECEIVED`;
-  - `JIRA_CREATED`;
-  - `REMEDIATION_RECEIVED`;
-  - `EXECUTING`;
-  - `SELF_CHECKING`;
-  - `DONE`;
-  - `FAILED`;
-  - `ESCALATED`.
-- Реализовать Jira adapter:
-  - сначала mock;
-  - затем real Jira adapter.
-- Реализовать WARP remediation adapter.
-- Реализовать connector registry:
-  - Confluence connector;
-  - config-updater connector;
-  - db-migration connector.
-- Добавить self-check через WARP.
-- Добавить callback в Координатор.
-- Зафиксировать правило: Coordinator только поручает remediation, а Jira/CR создаёт CR Manager.
-
-### Критерии готовности
-
-- CR Manager принимает задачу от Координатора.
-- Создаёт Jira-задачу.
-- Получает remediation-инструкции от WARP.
-- Выполняет mock/real коннекторы.
-- Делает self-check.
-- Сообщает Координатору результат.
-- Пишет свои trace-события.
-
-## Фаза 5. Trace Collector
+## Фаза 6. Trace Collector
 
 ### Цель
 
@@ -221,7 +238,7 @@
 - Trace не теряется при падении одного агента.
 - Можно восстановить хронологию предзаказа по `correlation_id`.
 
-## Фаза 6. ЕР-Координатор / ЕР-Конфигуратор
+## Фаза 7. ЕР-Координатор / ЕР-Конфигуратор
 
 ### Цель
 
@@ -250,7 +267,7 @@
 - Формируется конфиг для ЕР.
 - Ошибки конфигурации эскалируются с контекстом.
 
-## Фаза 7. Init Loader и Публикатор
+## Фаза 8. Init Loader и Публикатор
 
 ### Цель
 
@@ -282,7 +299,7 @@
 - Каждый шаг имеет владельца-агента.
 - Есть trace от предзаказа до публикации.
 
-## Фаза 8. ИИ-слой агентов
+## Фаза 9. ИИ-слой агентов
 
 ### Цель
 
@@ -338,7 +355,7 @@ LLM предлагает действие
 - Промпты не содержат секретов.
 - Есть audit trail решений.
 
-## Фаза 9. Production hardening
+## Фаза 10. Production hardening
 
 ### Работы
 
@@ -370,10 +387,10 @@ LLM предлагает действие
 ```text
 1. Утвердить концепцию и READY как рубеж
 2. Укрепить Координатор и storage
-3. Реализовать Requirements Agent и подключить СДО/каталоги
+3. Реализовать CR Manager и Jira/CR creation
 4. Подключить настоящий WARP readiness
-5. Реализовать CR Manager
-6. Подключить Jira и remediation
+5. Расширить CR Manager до remediation orchestration
+6. Реализовать Requirements Agent и подключить СДО/каталоги
 7. Реализовать Trace Collector
 8. Реализовать ЕР-Координатор
 9. Добавить Init Loader и Публикатор

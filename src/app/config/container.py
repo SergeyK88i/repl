@@ -18,6 +18,7 @@ class AppContainer:
         self.orders = InMemoryOrderRepository()
         self.tasks = InMemoryTaskRepository()
         self.trace = InMemoryTraceAdapter()
+        self.llm = self._build_llm()
         self.warp = self._build_warp()
         self.cr_manager = self._build_cr_manager()
         self.replica_init = self._build_replica_init()
@@ -45,6 +46,26 @@ class AppContainer:
         if self.settings.adapter_profile == AdapterProfile.MOCK:
             return MockReplicaInitAdapter()
         raise NotImplementedError("HTTP Replica Init adapter is not implemented yet")
+
+    def _build_llm(self):
+        if not self.settings.gigachat_auth_token:
+            return None
+        from shared.adapters.llm.gigachat import GigaChatAdapter, GigaChatAdapterConfig
+
+        return GigaChatAdapter(
+            GigaChatAdapterConfig(
+                auth_token=self.settings.gigachat_auth_token,
+                scope=self.settings.gigachat_scope,
+                model=self.settings.gigachat_model,
+                embeddings_model=self.settings.gigachat_embeddings_model,
+                oauth_url=self.settings.gigachat_oauth_url,
+                chat_url=self.settings.gigachat_chat_url,
+                embeddings_url=self.settings.gigachat_embeddings_url,
+                timeout_seconds=self.settings.gigachat_timeout_seconds,
+                verify_ssl=self.settings.gigachat_verify_ssl,
+                ca_bundle_path=self.settings.gigachat_ca_bundle_path,
+            )
+        )
 
 
 @lru_cache
